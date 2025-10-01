@@ -16,7 +16,11 @@ export const metadata: Metadata = {
   },
   viewport: 'width=device-width,initial-scale=1,maximum-scale=1'
 };
-
+// Runtime and rendering controls to avoid static prerender issues
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 export default function RootLayout({
   children,
 }: {

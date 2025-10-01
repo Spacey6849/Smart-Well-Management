@@ -109,10 +109,25 @@ export function MapComponent({ wells, selectedWell, onWellSelect, highlightedWel
       {selectedWell && <MapFlyTo well={selectedWell} />}
   <PopupOffset />
       <TileLayer
+<<<<<<< HEAD
         url={theme === 'dark'
           ? 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png'
           : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'}
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://stadiamaps.com/">Stadia Maps</a>'
+=======
+        url={(function(){
+          const stadiaKey = (process.env as any)['NEXT_PUBLIC_STADIA_API_KEY'];
+          if (theme === 'dark') {
+            if (stadiaKey) {
+              return `https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png?api_key=${stadiaKey}`;
+            }
+            // Fallback dark basemap (Carto Dark Matter, no key required)
+            return 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png';
+          }
+          return 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+        })()}
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://stadiamaps.com/">Stadia Maps</a>, &copy; <a href="https://carto.com/attributions">CARTO</a>'
+>>>>>>> origin/main
       />
     {wells.map((well) => (
         <Marker

@@ -26,6 +26,7 @@ export default function ProfilePage() {
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+<<<<<<< HEAD
   // Password reset
   const [showReset, setShowReset] = useState(false);
   const [pwOld, setPwOld] = useState('');
@@ -33,6 +34,8 @@ export default function ProfilePage() {
   const [pwConfirm, setPwConfirm] = useState('');
   const [pwLoading, setPwLoading] = useState(false);
   const [pwMsg, setPwMsg] = useState<string|null>(null);
+=======
+>>>>>>> origin/main
 
   // Load initial form values from user metadata
   useEffect(() => {
@@ -212,6 +215,7 @@ export default function ProfilePage() {
           </div>
           <div className={`rounded-3xl border p-8 ${isDark ? 'border-white/10 bg-gradient-to-br from-white/5 to-white/0 backdrop-blur-xl' : 'border-gray-200 bg-white'}`}>
             <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>Security</h2>
+<<<<<<< HEAD
             {!showReset && (
               <button onClick={()=> { setShowReset(true); setPwMsg(null); }} className={`text-xs font-medium underline-offset-4 hover:underline ${isDark ? 'text-blue-300 hover:text-blue-200' : 'text-blue-600 hover:text-blue-500'}`}>Reset Password</button>
             )}
@@ -251,6 +255,10 @@ export default function ProfilePage() {
                 <p className={`text-[10px] mt-1 ${isDark ? 'text-white/40' : 'text-gray-500'}`}>Password must be at least 8 characters. Session will rotate after change.</p>
               </div>
             )}
+=======
+            <p className={`text-xs mb-4 ${isDark ? 'text-white/60' : 'text-gray-600'}`}>Password resets & multi-factor authentication will appear here in a future update.</p>
+            <button className={`text-xs font-medium transition underline-offset-4 hover:underline ${isDark ? 'text-blue-300 hover:text-blue-200' : 'text-blue-600 hover:text-blue-500'}`} disabled>Reset Password (coming soon)</button>
+>>>>>>> origin/main
           </div>
           <div className={`rounded-3xl border p-8 ${isDark ? 'border-white/10 bg-white/5 backdrop-blur-xl' : 'border-gray-200 bg-white'}`}>
             <div className="flex items-center justify-between mb-6">
@@ -302,7 +310,11 @@ export default function ProfilePage() {
               <h3 className={`text-sm font-semibold tracking-wide uppercase mb-4 ${isDark ? 'text-white/70' : 'text-gray-500'}`}>At a Glance</h3>
               <ul className={`space-y-3 text-[13px] ${isDark ? 'text-white/70' : 'text-gray-600'}`}>
                 <li className="flex justify-between"><span>Role</span><span className={`font-medium ${isDark ? 'text-white/90' : 'text-gray-800'}`}>{role || '—'}</span></li>
+<<<<<<< HEAD
                 <li className="flex justify-between"><span>Wells Created</span><span className={`font-medium ${isDark ? 'text-white/90' : 'text-gray-800'}`}>{wellsLoading ? '…' : wells.length}</span></li>
+=======
+                <li className="flex justify-between"><span>Wells Created</span><span className={`font-medium ${isDark ? 'text-white/90' : 'text-gray-800'}`}>—</span></li>
+>>>>>>> origin/main
                 <li className="flex justify-between"><span>Member Since</span><span className={`font-medium ${isDark ? 'text-white/90' : 'text-gray-800'}`}>{(user as any)?.created_at ? new Date((user as any).created_at).toLocaleDateString() : '—'}</span></li>
               </ul>
             </div>

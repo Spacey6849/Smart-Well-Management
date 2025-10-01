@@ -30,12 +30,12 @@ export async function POST(req: NextRequest) {
     if (!rows.length) return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     const user = rows[0];
     const ok = await bcrypt.compare(password, user.password_hash);
-  if (!ok) return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
-  if ('email_verified' in user && user.email_verified === 0) return NextResponse.json({ error: 'Email not verified' }, { status: 403 });
+    if (!ok) return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+    if ('email_verified' in user && user.email_verified === 0) return NextResponse.json({ error: 'Email not verified' }, { status: 403 });
 
     const token = sessionToken();
     const expires = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7);
-  await query('INSERT INTO sessions (id,user_id,token,expires_at) VALUES (UUID(),?,?,?)', [user.id, token, expires]);
+    await query('INSERT INTO sessions (id,user_id,token,expires_at) VALUES (UUID(),?,?,?)', [user.id, token, expires]);
 
     const res = NextResponse.json({ ok: true });
     res.cookies.set('ecw_session', token, {

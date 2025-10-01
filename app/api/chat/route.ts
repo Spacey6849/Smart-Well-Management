@@ -2,11 +2,19 @@ import { NextRequest } from 'next/server';
 // Force dynamic execution & disable caching to avoid static optimization error when using request.url and streaming
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
+<<<<<<< HEAD
 export const fetchCache = 'no-store';
 export const runtime = 'nodejs';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { cookies } from 'next/headers';
 import { query } from '@/lib/db';
+=======
+export const fetchCache = 'only-no-store';
+export const runtime = 'nodejs';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { cookies } from 'next/headers';
+import { getSupabase } from '@/lib/supabase/client';
+>>>>>>> origin/main
 
 // Expected table structure (create in Supabase):
 // Table: chat_messages
@@ -14,8 +22,14 @@ import { query } from '@/lib/db';
 
 export async function POST(req: NextRequest) {
   try {
+<<<<<<< HEAD
   // Ensure chat_messages has needed polymorphic linkage columns (runtime safe add)
   await ensureChatColumns();
+=======
+  const supabase = getSupabase();
+  // Ensure chat_messages has needed polymorphic linkage columns (runtime safe add)
+  // Supabase schema should already include chat_messages with columns: role, content, username, response, created_at
+>>>>>>> origin/main
   const url = new URL(req.url);
   const isStream = url.searchParams.get('stream') === '1';
     const body = await req.json();
@@ -27,12 +41,17 @@ export async function POST(req: NextRequest) {
     const cookieStore = cookies();
     const userSession = cookieStore.get('ecw_session')?.value;
     const adminSession = cookieStore.get('ecw_admin_session')?.value;
+<<<<<<< HEAD
     const sessionCols = await getSessionColumns();
     const hasAdminIdCol = sessionCols.has('admin_id');
+=======
+  const hasAdminIdCol = false; // sessions table in Supabase uses user_id only
+>>>>>>> origin/main
   let userId: string | null = null;
   let adminId: string | null = null;
   if (adminSession) {
       if (hasAdminIdCol) {
+<<<<<<< HEAD
         const rows = await query('SELECT admin_id FROM sessions WHERE token = ? LIMIT 1', [adminSession]);
         if (rows.length && rows[0].admin_id) adminId = rows[0].admin_id;
       } else {
@@ -42,20 +61,42 @@ export async function POST(req: NextRequest) {
           const aid = rows[0].user_id;
             const a = await query('SELECT id FROM admin_accounts WHERE id = ? LIMIT 1', [aid]);
             if (a.length) adminId = aid; else userId = aid; // mis-issued cookie? treat as user
+=======
+        // Not supported in current schema
+      } else {
+        
+        const { data: s } = await supabase.from('sessions').select('user_id').eq('token', adminSession).limit(1).maybeSingle();
+        if (s?.user_id) {
+          const aid = s.user_id as string;
+          const { data: a } = await supabase.from('admin_accounts').select('id').eq('id', aid).limit(1).maybeSingle();
+          if (a) adminId = aid; else userId = aid;
+>>>>>>> origin/main
         }
       }
     }
     if (!adminId && userSession) {
+<<<<<<< HEAD
       const rows = await query('SELECT user_id FROM sessions WHERE token = ? LIMIT 1', [userSession]);
       if (rows.length && rows[0].user_id) {
         const uid = rows[0].user_id;
+=======
+      
+      const { data: s } = await supabase.from('sessions').select('user_id').eq('token', userSession).limit(1).maybeSingle();
+      if (s?.user_id) {
+        const uid = s.user_id as string;
+>>>>>>> origin/main
         if (hasAdminIdCol) {
           // standard path: ensure it's not an admin row accidentally
           userId = uid;
         } else {
           // If sessions lacks admin_id we must ensure uid is not an admin id
+<<<<<<< HEAD
           const a = await query('SELECT id FROM admin_accounts WHERE id = ? LIMIT 1', [uid]);
           if (a.length) adminId = uid; else userId = uid;
+=======
+          const { data: a } = await supabase.from('admin_accounts').select('id').eq('id', uid).limit(1).maybeSingle();
+          if (a) adminId = uid; else userId = uid;
+>>>>>>> origin/main
         }
       }
     }
@@ -63,6 +104,7 @@ export async function POST(req: NextRequest) {
     // Build wells + latest metric snapshot.
     // Admin: all wells. Panchayat user: all wells sharing any panchayat_name the user owns.
     let wells: any[] = [];
+<<<<<<< HEAD
     if (adminId) {
       wells = await query(`SELECT w.id, w.user_id, w.name, w.panchayat_name, w.status, w.lat, w.lng,
               u.username, u.email, u.phone, u.location
@@ -82,16 +124,58 @@ export async function POST(req: NextRequest) {
             u.phone, u.location
           FROM user_wells w LEFT JOIN users u ON u.id = w.user_id
           WHERE w.user_id = ? ORDER BY w.id`, [userId]);
+=======
+    
+    if (adminId) {
+      const { data } = await supabase
+        .from('user_wells')
+        .select('id,user_id,name,panchayat_name,status,lat,lng, users(username,email,phone,location)')
+        .order('id', { ascending: true });
+      wells = (data || []).map((w:any) => ({ ...w, ...w.users }));
+    } else if (userId) {
+      const { data: pRows } = await supabase
+        .from('user_wells')
+        .select('panchayat_name')
+        .eq('user_id', userId)
+        .not('panchayat_name', 'is', null);
+      const panchayats = Array.from(new Set((pRows || []).map(r => r.panchayat_name).filter(Boolean)));
+      if (panchayats.length) {
+        const { data } = await supabase
+          .from('user_wells')
+          .select('id,user_id,name,panchayat_name,status,lat,lng, users(phone,location)')
+          .in('panchayat_name', panchayats)
+          .order('id', { ascending: true });
+        wells = (data || []).map((w:any) => ({ ...w, ...w.users }));
+      } else {
+        const { data } = await supabase
+          .from('user_wells')
+          .select('id,user_id,name,panchayat_name,status,lat,lng, users(phone,location)')
+          .eq('user_id', userId)
+          .order('id', { ascending: true });
+        wells = (data || []).map((w:any) => ({ ...w, ...w.users }));
+>>>>>>> origin/main
       }
     }
 
     // Get latest metrics per well (limit recent rows then reduce in JS for portability across MySQL versions)
     const wellIds = wells.map(w => w.id);
+<<<<<<< HEAD
     let metricsByWell: Record<number, any> = {};
     if (wellIds.length) {
       const placeholders = wellIds.map(()=>'?').join(',');
   const metricRows = await query(`SELECT id, well_id, ph, tds, temperature, water_level, ts, well_name FROM well_metrics WHERE well_id IN (${placeholders}) ORDER BY ts DESC LIMIT 1000`, wellIds);
       for (const row of metricRows as any[]) {
+=======
+    let metricsByWell: Record<string, any> = {};
+    if (wellIds.length) {
+      const { data: metricRows } = await supabase
+        .from('well_metrics')
+        .select('id, well_id, ph, tds, temperature, water_level, ts, well_name')
+        .in('well_id', wellIds)
+        .order('ts', { ascending: false })
+        .limit(1000);
+      for (const row of (metricRows || []) as any[]) {
+>>>>>>> origin/main
         if (!metricsByWell[row.well_id]) metricsByWell[row.well_id] = row; // first is latest due to DESC
       }
     }
@@ -126,6 +210,7 @@ export async function POST(req: NextRequest) {
     let currentUsername: string | null = null;
     if (adminId) {
       try {
+<<<<<<< HEAD
         const a = await query<any>('SELECT username FROM admin_accounts WHERE id = ? LIMIT 1', [adminId]);
         currentUsername = a.length ? (a[0].username || 'Admin') : 'Admin';
       } catch { currentUsername = 'Admin'; }
@@ -133,20 +218,36 @@ export async function POST(req: NextRequest) {
       try {
         const u = await query<any>('SELECT username FROM users WHERE id = ? LIMIT 1', [userId]);
         currentUsername = u.length ? (u[0].username || 'User') : 'User';
+=======
+        const { data: a } = await supabase.from('admin_accounts').select('username').eq('id', adminId).limit(1).maybeSingle();
+        currentUsername = a?.username || 'Admin';
+      } catch { currentUsername = 'Admin'; }
+    } else if (userId) {
+      try {
+        const { data: u } = await supabase.from('users').select('username').eq('id', userId).limit(1).maybeSingle();
+        currentUsername = u?.username || 'User';
+>>>>>>> origin/main
       } catch { currentUsername = 'User'; }
     }
 
     let insertedUserMessageId: number | null = null;
     if (lastUser) {
+<<<<<<< HEAD
       insertedUserMessageId = await insertChatMessage('user', lastUser, userId, adminId, currentUsername);
     }
     const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
+=======
+  insertedUserMessageId = await insertChatMessage(supabase, 'user', lastUser, userId, adminId, currentUsername);
+    }
+  const apiKey = process.env['GEMINI_API_KEY'] || process.env['NEXT_PUBLIC_GEMINI_API_KEY'] || '';
+>>>>>>> origin/main
     if (!apiKey) {
       return new Response('AI model key not configured (set GEMINI_API_KEY in .env.local then restart).', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
     }
     if (!lastUser) {
       return new Response('No user message.', { status: 400, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
     }
+<<<<<<< HEAD
     // Model fallback list: user-specified first, then known stable defaults
     const requestedModel = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
     const candidateModels = Array.from(new Set([
@@ -154,6 +255,14 @@ export async function POST(req: NextRequest) {
       'gemini-1.5-flash',
       'gemini-1.5-pro'
     ]));
+=======
+    // Require model from env to avoid embedding model literals in code
+    const requestedModel = process.env['GEMINI_MODEL'] || '';
+    if (!requestedModel) {
+      return new Response('AI model not configured (set GEMINI_MODEL).', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+    }
+    const candidateModels = [requestedModel];
+>>>>>>> origin/main
     try {
       const genAI = new GoogleGenerativeAI(apiKey);
       let model: any = null;
@@ -222,11 +331,19 @@ export async function POST(req: NextRequest) {
           answer = lines.join('\n');
         }
         const formatted = neatFormat(answer);
+<<<<<<< HEAD
         const cols = await getChatColumns();
         if (insertedUserMessageId && cols.has('response')) {
           await query('UPDATE chat_messages SET response=? WHERE id=?', [formatted, insertedUserMessageId]);
         } else {
           await insertChatMessage('assistant', formatted, userId, adminId, null);
+=======
+        
+        if (insertedUserMessageId) {
+          await supabase.from('chat_messages').update({ response: formatted }).eq('id', insertedUserMessageId);
+        } else {
+          await insertChatMessage(supabase, 'assistant', formatted, userId, adminId, null);
+>>>>>>> origin/main
         }
         return new Response(formatted, { status: 200, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
       }
@@ -244,12 +361,20 @@ export async function POST(req: NextRequest) {
               }
               if (fullText.trim()) {
                 fullText = neatFormat(fullText);
+<<<<<<< HEAD
                 // If we have a user message id and response column, update that row; else fallback insert assistant row
                 const cols = await getChatColumns();
                 if (insertedUserMessageId && cols.has('response')) {
                   await query('UPDATE chat_messages SET response=? WHERE id=?', [fullText, insertedUserMessageId]);
                 } else {
                   await insertChatMessage('assistant', fullText, userId, adminId, null);
+=======
+                
+                if (insertedUserMessageId) {
+                  await supabase.from('chat_messages').update({ response: fullText }).eq('id', insertedUserMessageId);
+                } else {
+                  await insertChatMessage(supabase, 'assistant', fullText, userId, adminId, null);
+>>>>>>> origin/main
                 }
               }
               controller.close();
@@ -264,12 +389,21 @@ export async function POST(req: NextRequest) {
         const result = await model.generateContent(prompt);
   let replyText = result.response.text() || 'No reply.';
   const final = debugFlag ? `[model:${chosenModel}]\n` + replyText : replyText;
+<<<<<<< HEAD
   const cols = await getChatColumns();
   const neat = neatFormat(final);
   if (insertedUserMessageId && cols.has('response')) {
     await query('UPDATE chat_messages SET response=? WHERE id=?', [neat, insertedUserMessageId]);
   } else {
   await insertChatMessage('assistant', neat, userId, adminId, null);
+=======
+  const neat = neatFormat(final);
+  
+  if (insertedUserMessageId) {
+    await supabase.from('chat_messages').update({ response: neat }).eq('id', insertedUserMessageId);
+  } else {
+    await insertChatMessage(supabase, 'assistant', neat, userId, adminId, null);
+>>>>>>> origin/main
   }
   return new Response(neat, { status: 200, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
       }
@@ -284,7 +418,11 @@ export async function POST(req: NextRequest) {
 // Fetch recent chat history (GET /api/chat?limit=50)
 export async function GET(req: NextRequest) {
   try {
+<<<<<<< HEAD
   await ensureChatColumns();
+=======
+    const supabase = getSupabase();
+>>>>>>> origin/main
     const url = new URL(req.url);
     const limitParam = url.searchParams.get('limit');
     const limit = Math.min(Math.max(parseInt(limitParam || '50', 10) || 50, 1), 200);
@@ -293,6 +431,7 @@ export async function GET(req: NextRequest) {
     const adminSession = cookieStore.get('ecw_admin_session')?.value;
   let userId: string | null = null;
   let adminId: string | null = null;
+<<<<<<< HEAD
     const sessionCols = await getSessionColumns();
     const hasAdminIdCol = sessionCols.has('admin_id');
     if (adminSession) {
@@ -349,12 +488,91 @@ export async function GET(req: NextRequest) {
       return { ...r, displayRole };
     });
   return new Response(JSON.stringify({ messages: enriched }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+=======
+    const hasAdminIdCol = false;
+    if (adminSession) {
+      
+      const { data: s } = await supabase.from('sessions').select('user_id').eq('token', adminSession).limit(1).maybeSingle();
+      if (s?.user_id) {
+        const aid = s.user_id as string;
+        const { data: a } = await supabase.from('admin_accounts').select('id').eq('id', aid).limit(1).maybeSingle();
+        if (a) adminId = aid; else userId = aid;
+      }
+    }
+    if (!adminId && userSession) {
+      
+      const { data: s } = await supabase.from('sessions').select('user_id').eq('token', userSession).limit(1).maybeSingle();
+      if (s?.user_id) {
+        const uid = s.user_id as string;
+        const { data: a } = hasAdminIdCol ? { data: null } : await supabase.from('admin_accounts').select('id').eq('id', uid).limit(1).maybeSingle();
+        if (!hasAdminIdCol && a) adminId = uid; else userId = uid;
+      }
+    }
+  let rows;
+  const selectCols = ['id','role','content','created_at','response','username'];
+  
+  // Determine current username for filtering (new schema) while retaining legacy id-based filtering
+    let currentUsername: string | null = null;
+    if (adminId) {
+      try { const { data: a } = await supabase.from('admin_accounts').select('username').eq('id', adminId).limit(1).maybeSingle(); currentUsername = a?.username || 'Admin'; } catch {}
+    } else if (userId) {
+      try { const { data: u } = await supabase.from('users').select('username').eq('id', userId).limit(1).maybeSingle(); currentUsername = u?.username || null; } catch {}
+    }
+    if (currentUsername) {
+      const { data } = await supabase
+        .from('chat_messages')
+        .select(selectCols.join(','))
+        .eq('username', currentUsername)
+        .order('created_at', { ascending: true })
+        .limit(limit);
+      rows = data || [];
+    } else if (adminId) {
+      const { data } = await supabase
+        .from('chat_messages')
+        .select(selectCols.join(','))
+        .order('created_at', { ascending: true })
+        .limit(limit);
+      rows = data || [];
+    } else if (userId) {
+      const { data } = await supabase
+        .from('chat_messages')
+        .select(selectCols.join(','))
+        .order('created_at', { ascending: true })
+        .limit(limit);
+      rows = data || [];
+    } else {
+      return new Response(JSON.stringify({ messages: [] }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
+    // Expand history: for any row that has a stored assistant response, emit two messages
+    // 1) the original user (or assistant) message
+    // 2) an assistant message with the saved response
+    // This preserves order by created_at while ensuring the UI receives both sides.
+    const expanded: any[] = [];
+    for (const r of rows as any[]) {
+      const base = { id: r.id, role: r.role, content: r.content, created_at: r.created_at, username: r.username };
+      // Push the base message
+      expanded.push({ ...base, displayRole: r.role === 'assistant' ? 'assistant' : 'user' });
+      // If there's a response associated with this message, push it as a separate assistant entry
+      if (r.response && String(r.response).trim()) {
+        expanded.push({
+          id: `${r.id}-resp`,
+          role: 'assistant',
+          content: r.response,
+          created_at: r.created_at,
+          username: r.username,
+          displayRole: 'assistant'
+        });
+      }
+    }
+    return new Response(JSON.stringify({ messages: expanded }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+>>>>>>> origin/main
   } catch (e: any) {
   return new Response(JSON.stringify({ error: e.message || 'Unexpected error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
 }
 
 // --- helpers ---
+<<<<<<< HEAD
 async function ensureChatColumns() {
   try {
     // Ensure table exists (migration 006 should create it). If not, abort silently.
@@ -417,6 +635,19 @@ async function getSessionColumns(): Promise<Set<string>> {
     return new Set(rows.map(r => r.Field));
   } catch { return new Set(); }
 }
+=======
+async function insertChatMessage(supabase: ReturnType<typeof getSupabase>, role: string, content: string, _userId: string | null, _adminId: string | null, username: string | null): Promise<number | null> {
+  const { data, error } = await supabase
+    .from('chat_messages')
+    .insert({ role, content, username })
+    .select('id')
+    .maybeSingle();
+  if (error) return null;
+  return (data as any)?.id ?? null;
+}
+
+async function getSessionColumns(): Promise<Set<string>> { return new Set(); }
+>>>>>>> origin/main
 
 // Lightweight formatting helper to ensure each metric label starts on its own line.
 function neatFormat(text: string): string {

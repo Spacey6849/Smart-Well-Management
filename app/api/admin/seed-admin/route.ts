@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+export const runtime = 'nodejs';
+>>>>>>> origin/main
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
@@ -15,15 +19,28 @@ export async function POST(req: Request) {
   if (provided !== secret) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+<<<<<<< HEAD
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+=======
+  const url = (process.env as Record<string, string | undefined>)["NEXT_PUBLIC_SUPABASE_URL"];
+>>>>>>> origin/main
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !serviceKey) {
     return NextResponse.json({ error: 'Missing Supabase env vars' }, { status: 500 });
   }
   const supabaseAdmin = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
 
+<<<<<<< HEAD
   const ADMIN_EMAIL = 'mosesrodrigues10@gmail.com';
   const ADMIN_PASSWORD = 'Admin@6849';
+=======
+  // Read admin bootstrap credentials from environment to avoid hardcoding secrets in repo
+  const ADMIN_EMAIL = process.env.ADMIN_SEED_EMAIL;
+  const ADMIN_PASSWORD = process.env.ADMIN_SEED_PASSWORD;
+  if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+    return NextResponse.json({ error: 'Missing ADMIN_SEED_EMAIL or ADMIN_SEED_PASSWORD in server environment' }, { status: 500 });
+  }
+>>>>>>> origin/main
 
   // Check if user exists
   const { data: users, error: listErr } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });

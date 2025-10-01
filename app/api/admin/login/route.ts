@@ -20,11 +20,11 @@ export async function POST(req: NextRequest) {
 
     const admin = rows[0];
     const ok = await bcrypt.compare(password, admin.password_hash);
-  if (!ok) return NextResponse.json({ error: 'Invalid admin credentials (password mismatch)' }, { status: 401 });
+    if (!ok) return NextResponse.json({ error: 'Invalid admin credentials (password mismatch)' }, { status: 401 });
 
     const t = token();
     const expires = new Date(Date.now() + 1000 * 60 * 60 * 12);
-  await query('INSERT INTO sessions (id,user_id,token,expires_at) VALUES (UUID(),?,?,?)', [admin.id, t, expires]);
+    await query('INSERT INTO sessions (id,user_id,token,expires_at) VALUES (UUID(),?,?,?)', [admin.id, t, expires]);
 
     const res = NextResponse.json({ ok: true, admin: true });
     res.cookies.set('ecw_admin_session', t, {
@@ -40,5 +40,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Admin auth failed' }, { status: 500 });
   }
 }
-
-// Supabase legacy implementation removed; MySQL-only route retained above.

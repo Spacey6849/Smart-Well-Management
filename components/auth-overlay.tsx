@@ -92,7 +92,7 @@ export function AuthOverlayProvider({ children }: { children: React.ReactNode })
                     // Normalize: usernames are stored lowercase; treat email case-insensitively
                     if (identifier) identifier = identifier.toLowerCase();
                     const password = (document.getElementById('ov-login-password') as HTMLInputElement)?.value;
-                    const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'mosesrodrigues10@gmail.com';
+                    const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || '';
                     try {
                       if (roleChoice === 'admin') {
                         if (identifier === 'admin' || identifier === ADMIN_EMAIL) {
@@ -136,7 +136,8 @@ export function AuthOverlayProvider({ children }: { children: React.ReactNode })
                   <div>
                     <div className="flex items-center justify-between mb-1.5">
                       <label htmlFor="ov-login-password" className={`block text-[13px] font-medium ${isDark ? 'text-white/75' : 'text-gray-600'}`}>Password</label>
-                      <a href="#" className={`text-[11px] font-medium transition ${isDark ? 'text-blue-300 hover:text-blue-200' : 'text-blue-600 hover:text-blue-500'}`}>Forgot?</a>
+                      <a href="/auth/forgot" className={`text-[11px] font-medium transition ${isDark ? 'text-blue-300 hover:text-blue-200' : 'text-blue-600 hover:text-blue-500'}`}>Forgot?</a>
+                      <a href="/auth/forgot" className={`text-[11px] font-medium transition ${isDark ? 'text-blue-300 hover:text-blue-200' : 'text-blue-600 hover:text-blue-500'}`}>Forgot?</a>
                     </div>
                     <input id="ov-login-password" type="password" required placeholder="••••••••" className={`block w-full rounded-xl focus:ring-0 text-sm px-4 py-3 outline-none transition ${isDark ? 'bg-white/10 border border-white/25 focus:border-blue-400/70 placeholder-white/40' : 'bg-white border border-gray-300 focus:border-blue-500/60 placeholder-gray-400 text-gray-800'}`} />
                   </div>

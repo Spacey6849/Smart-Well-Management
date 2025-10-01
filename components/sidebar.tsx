@@ -26,7 +26,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { WellData } from '@/lib/well-data';
 import { MetricCard } from './metric-card';
 import { WellChart } from './well-chart';
+<<<<<<< HEAD
 import { PredictiveChart } from './predictive-chart';
+=======
+>>>>>>> origin/main
 import { ThemeToggle } from './theme-toggle';
 
 interface SidebarProps {
@@ -367,6 +370,7 @@ export function Sidebar({ wells, selectedWell, onWellSelect, onSearchHighlightCh
                           <p className="text-sm text-gray-600 dark:text-gray-400">Critical</p>
                         </div>
                       </div>
+<<<<<<< HEAD
                       {/* Aggregate Averages */}
                       {wells.length > 0 && (
                         <div className="mt-5 grid grid-cols-2 gap-3 text-center">
@@ -424,6 +428,8 @@ export function Sidebar({ wells, selectedWell, onWellSelect, onSearchHighlightCh
                           <PredictiveChart well={selectedWell} futureHours={12} />
                         </div>
                       )}
+=======
+>>>>>>> origin/main
                     </CardContent>
                   </Card>
                 </TabsContent>
@@ -459,6 +465,7 @@ function RoutePlanner({ wells }: RoutePlannerProps) {
   const [position, setPosition] = useState<GeolocationPosition | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [optLink, setOptLink] = useState<string | null>(null);
+<<<<<<< HEAD
   const [excluded, setExcluded] = useState<Set<string>>(new Set());
 
   const toggleExcluded = (id: string) => {
@@ -468,6 +475,8 @@ function RoutePlanner({ wells }: RoutePlannerProps) {
       return next;
     });
   };
+=======
+>>>>>>> origin/main
 
   useEffect(() => {
     if (!navigator.geolocation) {
@@ -491,9 +500,14 @@ function RoutePlanner({ wells }: RoutePlannerProps) {
     return R * c;
   };
 
+<<<<<<< HEAD
   const activeWells = wells.filter(w => !excluded.has(w.id));
   const distances = position
     ? activeWells.map(w => ({
+=======
+  const distances = position
+    ? wells.map(w => ({
+>>>>>>> origin/main
         well: w,
         distanceKm: haversine(position.coords.latitude, position.coords.longitude, w.location.lat, w.location.lng)
       }))
@@ -501,8 +515,13 @@ function RoutePlanner({ wells }: RoutePlannerProps) {
 
   // Simple nearest-neighbor route (placeholder for full TSP) starting at user position
   const routeOrder = () => {
+<<<<<<< HEAD
     if (!position || activeWells.length === 0) return [] as { name: string; distanceFromPrev: number }[];
     const remaining = [...activeWells];
+=======
+    if (!position || wells.length === 0) return [] as { name: string; distanceFromPrev: number }[];
+    const remaining = [...wells];
+>>>>>>> origin/main
     let currentLat = position.coords.latitude;
     let currentLng = position.coords.longitude;
     const order: { name: string; distanceFromPrev: number }[] = [];
@@ -568,6 +587,7 @@ function RoutePlanner({ wells }: RoutePlannerProps) {
             Your Position: {position.coords.latitude.toFixed(5)}, {position.coords.longitude.toFixed(5)}
           </div>
         )}
+<<<<<<< HEAD
         {/* Well selection list with exclusion checkboxes */}
         {wells.length > 0 && (
           <div className="mb-3">
@@ -594,6 +614,8 @@ function RoutePlanner({ wells }: RoutePlannerProps) {
           </div>
         )}
 
+=======
+>>>>>>> origin/main
         {position && distances.length > 0 && (
           <div className="space-y-1">
             {distances.map(d => (
@@ -622,9 +644,12 @@ function RoutePlanner({ wells }: RoutePlannerProps) {
             )}
           </div>
         )}
+<<<<<<< HEAD
         {activeWells.length === 0 && (
           <div className="text-[11px] text-amber-600 dark:text-amber-400 mt-2">Select at least one well to build a route.</div>
         )}
+=======
+>>>>>>> origin/main
         {position && wells.length <= 1 && (
           <div className="text-[11px] text-amber-600 dark:text-amber-400 mt-1">Add more wells to compute multi-stop routes.</div>
         )}

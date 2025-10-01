@@ -38,9 +38,20 @@ export default function SetupWellsPage() {
 			try {
 				const L = await import('leaflet');
 				mapRef.current = L.map(el, { center: [15.48853,73.85236], zoom: 8 });
+<<<<<<< HEAD
 				const url = resolvedTheme === 'light'
 					? 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
 					: 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png';
+=======
+				// Prefer Stadia only if an API key is configured; otherwise fallback to Carto Dark to avoid 401s
+				const stadiaKey = (process.env.NEXT_PUBLIC_STADIA_API_KEY || (globalThis as any).NEXT_PUBLIC_STADIA_API_KEY) as string | undefined;
+				const darkUrl = stadiaKey
+					? `https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png?api_key=${encodeURIComponent(stadiaKey)}`
+					: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+				const url = resolvedTheme === 'light'
+					? 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+					: darkUrl;
+>>>>>>> origin/main
 				tileLayerRef.current = L.tileLayer(url, { maxZoom: 19 });
 				tileLayerRef.current.addTo(mapRef.current);
 				layerRef.current = L.layerGroup().addTo(mapRef.current);
@@ -62,9 +73,19 @@ export default function SetupWellsPage() {
 		(async () => {
 			if (!mapRef.current) return;
 			const L = await import('leaflet');
+<<<<<<< HEAD
 			const nextUrl = resolvedTheme === 'light'
 				? 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
 				: 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png';
+=======
+			const stadiaKey = (process.env.NEXT_PUBLIC_STADIA_API_KEY || (globalThis as any).NEXT_PUBLIC_STADIA_API_KEY) as string | undefined;
+			const darkUrl = stadiaKey
+				? `https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png?api_key=${encodeURIComponent(stadiaKey)}`
+				: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+			const nextUrl = resolvedTheme === 'light'
+				? 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+				: darkUrl;
+>>>>>>> origin/main
 			const currentUrl = tileLayerRef.current?._url;
 			if (currentUrl === nextUrl) return;
 			if (tileLayerRef.current) {
