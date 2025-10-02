@@ -366,8 +366,8 @@ export function Sidebar({ wells, selectedWell, onWellSelect, onSearchHighlightCh
                           </p>
                           <p className="text-sm text-gray-600 dark:text-gray-400">Critical</p>
                         </div>
-                        </div>
-                        {/* Aggregate Averages */}
+                      </div>
+                      {/* Aggregate Averages */}
                       {wells.length > 0 && (
                         <div className="mt-5 grid grid-cols-2 gap-3 text-center">
                           <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/40">
@@ -501,8 +501,8 @@ function RoutePlanner({ wells }: RoutePlannerProps) {
 
   // Simple nearest-neighbor route (placeholder for full TSP) starting at user position
   const routeOrder = () => {
-    if (!position || activeWells.length === 0) return [] as { name: string; distanceFromPrev: number }[];
-    const remaining = [...activeWells];
+  if (!position || activeWells.length === 0) return [] as { name: string; distanceFromPrev: number }[];
+  const remaining = [...activeWells];
     let currentLat = position.coords.latitude;
     let currentLng = position.coords.longitude;
     const order: { name: string; distanceFromPrev: number }[] = [];
@@ -621,7 +621,7 @@ function RoutePlanner({ wells }: RoutePlannerProps) {
             )}
           </div>
         )}
-        {activeWells.length === 0 && (
+  {activeWells.length === 0 && (
           <div className="text-[11px] text-amber-600 dark:text-amber-400 mt-2">Select at least one well to build a route.</div>
         )}
         {position && wells.length <= 1 && (

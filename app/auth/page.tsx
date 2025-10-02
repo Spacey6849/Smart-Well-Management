@@ -7,9 +7,6 @@ import 'leaflet/dist/leaflet.css';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useUser } from '@/components/user-context';
 
-// We instantiate Leaflet manually because we disable interaction; dynamic import helps tree-shaking
-// but here we can access it via global import (Leaflet CSS already imported).
-
 export default function AuthPage() {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const searchParams = useSearchParams();
@@ -25,9 +22,7 @@ export default function AuthPage() {
   const [resendBusy, setResendBusy] = useState(false);
   const [notice, setNotice] = useState<{ kind: 'success'|'error'|'info', text: string }|null>(null);
   const { refresh } = useUser();
-  // forgot password now uses dedicated page /auth/forgot
 
-  // Initialize Leaflet map only once client-side
   useEffect(() => {
     (async () => {
       if (!mapRef.current || (mapRef.current as any)._mapInited) return;
@@ -52,7 +47,6 @@ export default function AuthPage() {
     const url = new URL(window.location.href);
     url.searchParams.set("mode", next);
     router.replace(url.pathname + "?" + url.searchParams.toString(), { scroll: false });
-    // focus first field after animation
     setTimeout(() => {
       const id = next === 'login' ? 'login-email' : 'signup-name';
       const el = document.getElementById(id) as HTMLInputElement | null;
@@ -60,11 +54,9 @@ export default function AuthPage() {
     }, 180);
   };
 
-  // Keep state in sync if user changes query manually (back/forward buttons)
   useEffect(() => {
     const qp = (searchParams?.get("mode") as "login" | "signup" | null) || "login";
     if (qp !== mode) setMode(qp);
-    // Show banners based on verification outcome (query params from verification/reset flows)
     const verified = searchParams?.get('verified');
     const vErr = searchParams?.get('verify_error');
     const resetOk = searchParams?.get('reset');
@@ -89,32 +81,18 @@ export default function AuthPage() {
 
   return (
     <div className={`relative min-h-screen w-full overflow-hidden font-sans ${isDark ? 'text-white' : 'text-gray-900'}`}>
-      {/* Map Background */}
       <div ref={mapRef} className="absolute inset-0 -z-20 pointer-events-none" />
-      {/* Overlays / gradient noise for depth */}
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_30%_20%,rgba(0,200,255,0.16),transparent_60%),radial-gradient(circle_at_85%_75%,rgba(0,255,200,0.12),transparent_55%)]" />
       <div className={`absolute inset-0 -z-10 ${isDark ? 'bg-[linear-gradient(rgba(0,0,0,0.62),rgba(0,0,0,0.86))]' : 'bg-[linear-gradient(rgba(255,255,255,0.92),rgba(240,244,248,0.96))]'}`} />
-      {/* Vignette for focus */}
       <div className="absolute inset-0 -z-10 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_40%,rgba(0,0,0,0.4)_85%)]" />
-
       <main className="min-h-screen px-4 sm:px-5 pb-10 sm:pb-14 flex flex-col overflow-y-auto sm:pt-14 sm:items-center sm:justify-center">
-        {/* Mobile spacer to offset fixed nav (approx 60px total) */}
         <div className="h-[60px] sm:hidden shrink-0" aria-hidden />
-        <section
-          className={`relative w-full max-w-md mt-2 sm:mt-0 mx-auto backdrop-blur-xl rounded-3xl border px-5 py-7 sm:px-9 sm:py-9 overflow-hidden shadow-[0_8px_42px_-6px_rgba(0,0,0,0.55)] ${isDark ? 'border-white/15 bg-white/10' : 'border-gray-200 bg-white/80'} `}
-          aria-label="Authentication"
-        >
+        <section className={`relative w-full max-w-md mt-2 sm:mt-0 mx-auto backdrop-blur-xl rounded-3xl border px-5 py-7 sm:px-9 sm:py-9 overflow-hidden shadow-[0_8px_42px_-6px_rgba(0,0,0,0.55)] ${isDark ? 'border-white/15 bg-white/10' : 'border-gray-200 bg-white/80'} `} aria-label="Authentication">
           <header className="relative mb-8 text-center">
-            <h1 className={`text-3xl font-bold tracking-tight ${isDark ? '' : 'text-gray-900'}`}>
-              {mode === 'login' ? 'Welcome Back!' : 'Create Account'}
-            </h1>
-            <p className={`mt-2 text-sm ${isDark ? 'text-white/70' : 'text-gray-600'}`}>
-              {mode === 'login' ? 'Sign in to continue your journey.' : 'Join us and explore the world.'}
-            </p>
+            <h1 className={`text-3xl font-bold tracking-tight ${isDark ? '' : 'text-gray-900'}`}>{mode === 'login' ? 'Welcome Back!' : 'Create Account'}</h1>
+            <p className={`mt-2 text-sm ${isDark ? 'text-white/70' : 'text-gray-600'}`}>{mode === 'login' ? 'Sign in to continue your journey.' : 'Join us and explore the world.'}</p>
           </header>
-
           <div className="relative min-h-[320px]">
-            {/* Login Form */}
             <form
               onSubmit={async (e) => {
                 e.preventDefault();
@@ -128,7 +106,6 @@ export default function AuthPage() {
                     const j = await resp.json().catch(()=>({error:'Login failed'}));
                     setError(j.error || 'Login failed'); setSubmitting(false); return;
                   }
-                  // Ensure user context reflects new session before navigating
                   try { await refresh(); } catch {}
                   router.replace('/maps');
                 } catch (e:any) {
@@ -160,8 +137,6 @@ export default function AuthPage() {
               <button disabled={submitting} type="submit" className={`w-full inline-flex justify-center items-center gap-2 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium tracking-wide text-white px-5 py-3 transition focus-visible:outline-none focus-visible:ring-2 shadow-lg ${isDark ? 'bg-blue-600 hover:bg-blue-500 active:bg-blue-700 focus-visible:ring-blue-300/60 shadow-blue-900/30' : 'bg-blue-600 hover:bg-blue-500 active:bg-blue-700 focus-visible:ring-blue-400/50 shadow-blue-500/30'}`}>{submitting? 'Signing in...' : 'Log In'}</button>
               <p className={`text-center text-[13px] ${isDark ? 'text-white/70' : 'text-gray-600'}`}>Don&apos;t have an account? <button type="button" onClick={()=>switchMode('signup')} className={`font-medium underline-offset-4 hover:underline transition ${isDark ? 'text-blue-300 hover:text-blue-200' : 'text-blue-600 hover:text-blue-500'}`}>Sign up</button></p>
             </form>
-
-            {/* Signup Form */}
             <form
               onSubmit={async (e) => { 
                 e.preventDefault();
@@ -184,11 +159,9 @@ export default function AuthPage() {
                     const j = await resp.json().catch(()=>({error:'Signup failed'}));
                     setError(j.error || 'Signup failed'); setSubmitting(false); return;
                   }
-                  // Show confirmation modal and move to login
                   setConfirmEmail(signupEmail.trim().toLowerCase());
                   setConfirmOpen(true);
                   setMode('login');
-                  // Fill the login email field with the signup email for convenience
                   setTimeout(() => {
                     const el = document.getElementById('login-email') as HTMLInputElement | null;
                     if (el) el.value = signupEmail.trim().toLowerCase();
@@ -242,25 +215,17 @@ export default function AuthPage() {
               </div>
             </form>
           </div>
-
-          <footer className={`mt-8 pt-6 border-t text-[11px] tracking-wide ${isDark ? 'border-white/10 text-white/45' : 'border-gray-200 text-gray-500'}`}>
-            Protected by modern encryption. By continuing you agree to our terms.
-          </footer>
+          <footer className={`mt-8 pt-6 border-t text-[11px] tracking-wide ${isDark ? 'border-white/10 text-white/45' : 'border-gray-200 text-gray-500'}`}>Protected by modern encryption. By continuing you agree to our terms.</footer>
         </section>
       </main>
-      {/* Email Confirmation Modal */}
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent className={isDark ? 'bg-neutral-900 text-white border-white/10' : ''}>
           <DialogHeader>
             <DialogTitle>Check your email</DialogTitle>
-            <DialogDescription>
-              We sent a verification link to <span className="font-medium">{confirmEmail}</span>. Click the link to verify your email, then log in.
-            </DialogDescription>
+            <DialogDescription>We sent a verification link to <span className="font-medium">{confirmEmail}</span>. Click the link to verify your email, then log in.</DialogDescription>
           </DialogHeader>
           <div className="text-sm">
-            <p className={isDark?'text-white/70':'text-gray-600'}>
-              Didn&apos;t receive it? You can request a new link.
-            </p>
+            <p className={isDark?'text-white/70':'text-gray-600'}>Didn&apos;t receive it? You can request a new link.</p>
           </div>
           <DialogFooter className="gap-2 sm:gap-3">
             <button
@@ -282,18 +247,10 @@ export default function AuthPage() {
             >
               {resendBusy ? 'Resending…' : 'Resend email'}
             </button>
-            <a
-              href="https://mail.google.com"
-              target="_blank"
-              rel="noreferrer"
-              className={`inline-flex justify-center items-center rounded-lg px-4 py-2 text-sm font-medium ${isDark?'bg-blue-600 hover:bg-blue-500 text-white':'bg-blue-600 hover:bg-blue-500 text-white'}`}
-            >
-              Open Gmail
-            </a>
+            <a href="https://mail.google.com" target="_blank" rel="noreferrer" className={`inline-flex justify-center items-center rounded-lg px-4 py-2 text-sm font-medium ${isDark?'bg-blue-600 hover:bg-blue-500 text-white':'bg-blue-600 hover:bg-blue-500 text-white'}`}>Open Gmail</a>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {/* Forgot Password now uses a dedicated page (/auth/forgot) */}
     </div>
   );
 }

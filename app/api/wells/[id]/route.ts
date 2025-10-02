@@ -19,8 +19,8 @@ async function getSessionContext() {
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   try {
-  const { userId, isAdmin } = await getSessionContext();
-  if (!userId) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    const { userId, isAdmin } = await getSessionContext();
+    if (!userId) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     const body = await req.json().catch(() => ({}));
     const name = (body?.name || '').trim();
     if (!name) return NextResponse.json({ error: 'Name required' }, { status: 400 });

@@ -150,19 +150,12 @@ export function getWellStatusBg(status: WellData['status']): string {
 // --- Predictive Utilities ---
 export interface PredictionPoint { timestamp: Date; waterLevel: number; projected: boolean }
 
-/**
- * Computes a simple linear regression forecast for water level using the provided history.
- * @param history last N points (must be >= 4 for stable slope)
- * @param futureHours number of hours to project into future (default 12)
- * @returns concatenated list of original (projected=false) + forecast (projected=true)
- */
 export function forecastWaterLevel(history: WellData['history'], futureHours = 12): PredictionPoint[] {
   if (!history || history.length < 4) {
     return history.map(h => ({ timestamp: h.timestamp, waterLevel: h.waterLevel, projected: false }));
   }
-  // Use hours since first point as x, waterLevel as y
   const firstTime = history[0].timestamp.getTime();
-  const xs = history.map(h => (h.timestamp.getTime() - firstTime) / 3600000); // hours
+  const xs = history.map(h => (h.timestamp.getTime() - firstTime) / 3600000);
   const ys = history.map(h => h.waterLevel);
   const n = xs.length;
   const meanX = xs.reduce((a,b)=>a+b,0)/n;
@@ -171,14 +164,12 @@ export function forecastWaterLevel(history: WellData['history'], futureHours = 1
   for (let i=0;i<n;i++) { const dx = xs[i]-meanX; num += dx*(ys[i]-meanY); den += dx*dx; }
   const slope = den === 0 ? 0 : num/den;
   const intercept = meanY - slope*meanX;
-  // Prepare future points using last timestamp as baseline
   const last = history[history.length-1].timestamp;
   const lastX = (last.getTime() - firstTime)/3600000;
   const result: PredictionPoint[] = history.map(h => ({ timestamp: h.timestamp, waterLevel: h.waterLevel, projected: false }));
   for (let h=1; h<=futureHours; h++) {
     const x = lastX + h;
     const wl = intercept + slope * x;
-    // Constrain to non-negative water level
     result.push({ timestamp: new Date(last.getTime() + h*3600000), waterLevel: Math.max(0, wl), projected: true });
   }
   return result;

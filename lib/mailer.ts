@@ -10,14 +10,15 @@ export function getTransport() {
     host,
     port,
     secure: port === 465,
-    auth: env['SMTP_USER'] ? { user: env['SMTP_USER']!, pass: env['SMTP_PASS'] } : undefined
+    auth: env['SMTP_USER'] ? { user: env['SMTP_USER']!, pass: env['SMTP_PASS'] } : undefined,
   });
 }
 
 export async function sendVerificationEmail(to: string, token: string) {
   const env = process.env as Record<string, string | undefined>;
   const base = env['NEXT_PUBLIC_APP_URL'] || 'http://localhost:3000';
-  const verifyUrl = `${base}/api/auth/verify?token=${encodeURIComponent(token)}`; // API endpoint triggers verification
+  // Use /auth/verify page route (which should call API internally) for UX, adjust if direct API is desired
+  const verifyUrl = `${base}/auth/verify?token=${encodeURIComponent(token)}`;
   const transport = getTransport();
   await transport.sendMail({
     from: env['MAIL_FROM'] || 'no-reply@ecowell.local',

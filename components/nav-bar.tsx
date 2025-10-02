@@ -94,7 +94,6 @@ export function NavBar() {
                         }
                       } catch (error) {
                         console.error('Navigation error:', error);
-                        // Fallback to window location
                         window.location.href = '/setup/wells';
                       }
                     }}

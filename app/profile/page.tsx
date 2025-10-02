@@ -26,7 +26,7 @@ export default function ProfilePage() {
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  // Password reset (implemented in this branch)
+  // Password reset state
   const [showReset, setShowReset] = useState(false);
   const [pwOld, setPwOld] = useState('');
   const [pwNew, setPwNew] = useState('');

@@ -25,7 +25,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<UserRole>(null);
   const [loading, setLoading] = useState(true);
   const computeRole = (u: BasicUser | null): UserRole => {
-    if (!u) return null;
+  if (!u) return null;
   const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'mosesrodrigues10@gmail.com';
   if (adminEmail && u.email === adminEmail) return 'admin';
     return 'panchayat';

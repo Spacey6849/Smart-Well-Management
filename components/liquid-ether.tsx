@@ -86,7 +86,8 @@ export default function LiquidEther({
   useEffect(() => {
     if (!mountRef.current) return;
 
-    function makePaletteTexture(stops: string[]): THREE.DataTexture {
+  // NOTE: Removed explicit THREE.DataTexture return type to avoid mismatch with installed @types/three version.
+  function makePaletteTexture(stops: string[]) {
       let arr: string[];
       if (Array.isArray(stops) && stops.length > 0) {
         arr = stops.length === 1 ? [stops[0], stops[0]] : stops;
@@ -102,7 +103,8 @@ export default function LiquidEther({
         data[i * 4 + 2] = Math.round(c.b * 255);
         data[i * 4 + 3] = 255;
       }
-      const tex = new THREE.DataTexture(data, w, 1, THREE.RGBAFormat);
+  // Cast to any to dodge potential type drift between three and @types/three; runtime class exists.
+  const tex = new (THREE as any).DataTexture(data, w, 1, THREE.RGBAFormat);
       tex.magFilter = THREE.LinearFilter;
       tex.minFilter = THREE.LinearFilter;
       tex.wrapS = THREE.ClampToEdgeWrapping;
@@ -128,8 +130,8 @@ export default function LiquidEther({
       time = 0;
       delta = 0;
       container: HTMLElement | null = null;
-      renderer: THREE.WebGLRenderer | null = null;
-      clock: THREE.Clock | null = null;
+  renderer: any | null = null;
+  clock: any | null = null;
       init(container: HTMLElement) {
         this.container = container;
         this.pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
@@ -537,11 +539,11 @@ export default function LiquidEther({
     class ShaderPass {
       props: any;
       uniforms?: Uniforms;
-      scene: THREE.Scene | null = null;
-      camera: THREE.Camera | null = null;
-      material: THREE.RawShaderMaterial | null = null;
-      geometry: THREE.BufferGeometry | null = null;
-      plane: THREE.Mesh | null = null;
+  scene: any | null = null;
+  camera: any | null = null;
+  material: any | null = null;
+  geometry: any | null = null;
+  plane: any | null = null;
       constructor(props: any) {
         this.props = props || {};
         this.uniforms = this.props.material?.uniforms;
@@ -565,7 +567,7 @@ export default function LiquidEther({
     }
 
     class Advection extends ShaderPass {
-      line!: THREE.LineSegments;
+  line!: any;
       constructor(simProps: any) {
         super({
           material: {
@@ -594,7 +596,8 @@ export default function LiquidEther({
         const vertices_boundary = new Float32Array([
           -1, -1, 0, -1, 1, 0, -1, 1, 0, 1, 1, 0, 1, 1, 0, 1, -1, 0, 1, -1, 0, -1, -1, 0
         ]);
-        boundaryG.setAttribute('position', new THREE.BufferAttribute(vertices_boundary, 3));
+  // Use (THREE as any).BufferAttribute to avoid type errors when types drift.
+  boundaryG.setAttribute('position', new (THREE as any).BufferAttribute(vertices_boundary, 3));
         const boundaryM = new THREE.RawShaderMaterial({
           vertexShader: line_vert,
           fragmentShader: advection_frag,
@@ -614,7 +617,7 @@ export default function LiquidEther({
     }
 
     class ExternalForce extends ShaderPass {
-      mouse!: THREE.Mesh;
+  mouse!: any;
       constructor(simProps: any) {
         super({ output: simProps.dst });
         this.init(simProps);
@@ -653,7 +656,7 @@ export default function LiquidEther({
           Math.max(Mouse.coords.y, -1 + cursorSizeY + cellScale.y * 2),
           1 - cursorSizeY - cellScale.y * 2
         );
-        const uniforms = (this.mouse.material as THREE.RawShaderMaterial).uniforms;
+  const uniforms = (this.mouse.material as any).uniforms;
         uniforms.force.value.set(forceX, forceY);
         uniforms.center.value.set(centerX, centerY);
         uniforms.scale.value.set(cursorSize, cursorSize);
@@ -800,7 +803,7 @@ export default function LiquidEther({
 
     class Simulation {
       options: SimOptions;
-      fbos: Record<string, THREE.WebGLRenderTarget | null> = {
+  fbos: Record<string, any | null> = {
         vel_0: null,
         vel_1: null,
         vel_viscous0: null,
@@ -940,9 +943,9 @@ export default function LiquidEther({
 
     class Output {
       simulation: Simulation;
-      scene: THREE.Scene;
-      camera: THREE.Camera;
-      output: THREE.Mesh;
+  scene: any;
+  camera: any;
+  output: any;
       constructor() {
         this.simulation = new Simulation();
         this.scene = new THREE.Scene();

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useTheme } from 'next-themes';
 import { useUser } from '@/components/user-context';
 import dynamic from 'next/dynamic';
+import { redirect } from 'next/navigation';
 
 // Dynamically import to avoid SSR issues with THREE
 const LiquidEther = dynamic(() => import('@/components/liquid-ether'), { ssr: false });
@@ -14,9 +15,15 @@ const Icon = ({ children }: { children: React.ReactNode }) => (
 	<span className="text-primary mr-2">{children}</span>
 );
 
-export default function LandingPage() {
-	const { theme } = useTheme();
+// Decide whether to show landing page or redirect based on an env flag
+const LANDING_DISABLED = process.env.NEXT_PUBLIC_DISABLE_LANDING === '1';
 
+export default function LandingPage() {
+	if (LANDING_DISABLED) {
+		// On the client, we can redirect imperatively
+		redirect('/maps');
+	}
+	useTheme(); // ensure hydration theme hook
 	return (
 		<main className="min-h-screen w-full overflow-x-hidden">
 			<Hero />

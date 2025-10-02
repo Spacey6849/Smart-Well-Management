@@ -1,56 +1,69 @@
 export const runtime = 'nodejs';
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { query } from '@/lib/db';
+import bcrypt from 'bcryptjs';
 
-// IMPORTANT: Set these in your environment (DO NOT commit real values):
-// SUPABASE_SERVICE_ROLE_KEY=... (service role key)
-// NEXT_PUBLIC_SUPABASE_URL=... (already present)
-// ADMIN_SEED_SECRET=some-long-random-string (shared secret to call this endpoint)
+// Endpoint to seed an admin row into MySQL `admin_accounts` (or `admins`) table.
+// Security: protected with x-seed-secret header compared against ADMIN_SEED_SECRET env var.
+// Required env: ADMIN_SEED_SECRET, ADMIN_SEED_EMAIL, ADMIN_SEED_PASSWORD
+// Table expectation (minimal): admin_accounts(id PK UUID/char36, email UNIQUE, password_hash, created_at, updated_at)
 
 export async function POST(req: Request) {
   const secret = process.env.ADMIN_SEED_SECRET;
-  if (!secret) {
-    return NextResponse.json({ error: 'Server missing ADMIN_SEED_SECRET' }, { status: 500 });
-  }
+  if (!secret) return NextResponse.json({ error: 'Server missing ADMIN_SEED_SECRET' }, { status: 500 });
   const provided = req.headers.get('x-seed-secret');
-  if (provided !== secret) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !serviceKey) {
-    return NextResponse.json({ error: 'Missing Supabase env vars' }, { status: 500 });
-  }
-  const supabaseAdmin = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
+  if (provided !== secret) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  // Read admin bootstrap credentials from environment to avoid hardcoding secrets in repo
-  let ADMIN_EMAIL = process.env.ADMIN_SEED_EMAIL;
-  let ADMIN_PASSWORD = process.env.ADMIN_SEED_PASSWORD;
-  if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
-    // Fallback (development only). DO NOT use in production.
-    ADMIN_EMAIL = ADMIN_EMAIL || 'admin@example.com';
-    ADMIN_PASSWORD = ADMIN_PASSWORD || 'ChangeMe123!';
-    console.warn('[seed-admin] Falling back to hardcoded admin credentials. Set ADMIN_SEED_EMAIL & ADMIN_SEED_PASSWORD in production.');
-  }
+  const email = process.env.ADMIN_SEED_EMAIL?.toLowerCase();
+  const password = process.env.ADMIN_SEED_PASSWORD;
+  if (!email || !password) return NextResponse.json({ error: 'Missing ADMIN_SEED_EMAIL or ADMIN_SEED_PASSWORD' }, { status: 500 });
 
-  // Check if user exists
-  const { data: users, error: listErr } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-  if (listErr) return NextResponse.json({ error: listErr.message }, { status: 500 });
-  const existing = users.users.find(u => u.email === ADMIN_EMAIL);
-  if (existing) {
-    // Ensure confirmed
-    if (!existing.email_confirmed_at) {
-      await supabaseAdmin.auth.admin.updateUserById(existing.id, { email_confirm: true });
+  try {
+    // Check existence
+    const existing = await query<any>('SELECT id FROM admin_accounts WHERE email=? LIMIT 1', [email]);
+    if (existing.length) {
+      return NextResponse.json({ status: 'already-exists', id: existing[0].id });
     }
-    return NextResponse.json({ status: 'already-exists', id: existing.id, confirmed: true });
+  } catch (e: any) {
+    // Fallback alternative table name if schema differs
+    if (e?.code === 'ER_NO_SUCH_TABLE') {
+      try {
+        const existingAlt = await query<any>('SELECT id FROM admins WHERE email=? LIMIT 1', [email]);
+        if (existingAlt.length) return NextResponse.json({ status: 'already-exists', id: existingAlt[0].id });
+        const hash = await bcrypt.hash(password, 10);
+        await query('INSERT INTO admins (id,email,password_hash,created_at,updated_at) VALUES (UUID(),?,?,NOW(),NOW())', [email, hash]);
+        return NextResponse.json({ status: 'created', table: 'admins' });
+      } catch (inner) {
+        console.error('Admin seed fallback failed', inner);
+        return NextResponse.json({ error: 'Admin seed failed (fallback)' }, { status: 500 });
+      }
+    } else {
+      console.error('Admin seed existence check failed', e);
+      return NextResponse.json({ error: 'Admin seed failed' }, { status: 500 });
+    }
   }
 
-  const { data: created, error: createErr } = await supabaseAdmin.auth.admin.createUser({
-    email: ADMIN_EMAIL,
-    password: ADMIN_PASSWORD,
-    email_confirm: true,
-    user_metadata: { full_name: 'Admin' }
-  });
-  if (createErr) return NextResponse.json({ error: createErr.message }, { status: 500 });
-  return NextResponse.json({ status: 'created', id: created.user?.id });
+  // Insert into primary table
+  try {
+    const hash = await bcrypt.hash(password, 10);
+    await query('INSERT INTO admin_accounts (id,email,password_hash,created_at,updated_at) VALUES (UUID(),?,?,NOW(),NOW())', [email, hash]);
+    return NextResponse.json({ status: 'created', table: 'admin_accounts' });
+  } catch (e: any) {
+    if (e?.code === 'ER_NO_SUCH_TABLE') {
+      // Retry with fallback handled earlier (in case race)
+      try {
+        const hash = await bcrypt.hash(password, 10);
+        await query('INSERT INTO admins (id,email,password_hash,created_at,updated_at) VALUES (UUID(),?,?,NOW(),NOW())', [email, hash]);
+        return NextResponse.json({ status: 'created', table: 'admins' });
+      } catch (inner) {
+        console.error('Admin seed insert fallback failed', inner);
+        return NextResponse.json({ error: 'Admin seed failed (no table)' }, { status: 500 });
+      }
+    }
+    if (e?.code === 'ER_DUP_ENTRY') {
+      return NextResponse.json({ status: 'already-exists' });
+    }
+    console.error('Admin seed insert failed', e);
+    return NextResponse.json({ error: 'Admin seed failed' }, { status: 500 });
+  }
 }

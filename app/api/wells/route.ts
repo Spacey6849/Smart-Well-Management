@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { query } from '@/lib/db';
-
 export async function GET() {
   const cookieStore = cookies();
   const token = cookieStore.get('ecw_session')?.value || cookieStore.get('ecw_admin_session')?.value;
@@ -58,7 +57,7 @@ export async function POST(req: Request) {
       actingAsUserId = body.user_id; // allow admin to specify target user
     }
     if (!wells.length) return NextResponse.json({ ok: true, count: 0 });
-    for (const w of wells) {
+  for (const w of wells) {
       try {
         await query('REPLACE INTO user_wells (id,user_id,name,panchayat_name,lat,lng,status) VALUES (?,?,?,?,?,?,?)', [w.id, actingAsUserId, w.name, w.panchayat_name || null, w.location?.lat, w.location?.lng, w.status || 'active']);
       } catch (e) {
