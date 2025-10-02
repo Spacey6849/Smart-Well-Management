@@ -1,9 +1,5 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-<<<<<<< HEAD
-
-=======
 /netlify
->>>>>>> origin/main
 # dependencies
 /node_modules
 /.pnp
@@ -38,9 +34,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-<<<<<<< HEAD
-=======
 
 # Local Netlify folder
 .netlify
->>>>>>> origin/main
