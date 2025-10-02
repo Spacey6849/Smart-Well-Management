@@ -11,8 +11,6 @@
 				"$tsc"
 			],
 			"group": "build"
-<<<<<<< HEAD
-=======
 		},
 		{
 			"label": "Build Next.js project",
@@ -47,7 +45,6 @@
 			"isBackground": false,
 			"problemMatcher": [],
 			"group": "build"
->>>>>>> origin/main
 		}
 	]
 }

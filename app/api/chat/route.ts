@@ -2,7 +2,8 @@ import { NextRequest } from 'next/server';
 // Force dynamic execution & disable caching to avoid static optimization error when using request.url and streaming
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
-export const fetchCache = 'force-no-store';
+// Use a valid fetch cache directive accepted by Next.js types. 'force-cache' or 'only-no-store' etc. We want no caching.
+export const fetchCache = 'default-no-store';
 export const runtime = 'nodejs';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { cookies } from 'next/headers';

@@ -1,6 +1,8 @@
+export const runtime = 'nodejs';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { supabaseServer } from '@/lib/supabase-server';
+import { sendWellStatusAlertEmail } from '@/lib/mailer';
 export async function GET() {
   const cookieStore = cookies();
   const token = cookieStore.get('ecw_session')?.value || cookieStore.get('ecw_admin_session')?.value;
@@ -23,14 +25,30 @@ export async function GET() {
   // Fetch wells (basic). For metrics we can issue a separate latest metrics query per well or a view later.
   const wellsQuery = sb
     .from('user_wells')
-    .select('id,user_id,name,panchayat_name,lat,lng,status,created_at');
+    .select('id,user_id,name,panchayat_name,village_name,lat,lng,status,created_at, users:users!inner (phone,location)');
   if (!isAdmin) wellsQuery.eq('user_id', userId);
   const { data: wells, error } = await wellsQuery.order('created_at', { ascending: true });
   if (error) {
     console.error('Wells select error', error);
     return NextResponse.json({ wells: [] });
   }
-  return NextResponse.json({ wells: wells || [] });
+  const normalized = (wells || []).map(w => {
+    // Supabase returns joined table as array when using alias if multiple possible rows; we expect at most one
+    const userRow = Array.isArray((w as any).users) ? (w as any).users[0] : (w as any).users;
+    return {
+      id: w.id,
+      user_id: w.user_id,
+      name: w.name,
+      panchayat_name: w.panchayat_name,
+      village_name: (w as any).village_name || userRow?.location || null,
+      lat: w.lat,
+      lng: w.lng,
+      status: w.status,
+      created_at: w.created_at,
+      contact_phone: userRow?.phone || null
+    };
+  });
+  return NextResponse.json({ wells: normalized });
 }
 
 export async function POST(req: Request) {
@@ -53,27 +71,84 @@ export async function POST(req: Request) {
     const { data: adminCheck } = await sb.from('admin_accounts').select('id').eq('id', sessionUserId).limit(1);
     const isAdmin = !!(adminCheck && adminCheck.length);
     const body = await req.json();
-    const wells = Array.isArray(body.wells) ? body.wells : [];
+  // Accept either { wells: [...] } bulk format OR single well fields directly.
+  const incomingWells = Array.isArray(body.wells) ? body.wells : (body.name ? [body] : []);
     if (isAdmin && body.user_id) {
       actingAsUserId = body.user_id; // allow admin to specify target user
     }
-    if (!wells.length) return NextResponse.json({ ok: true, count: 0 });
-    for (const w of wells) {
+    if (!incomingWells.length) return NextResponse.json({ ok: true, count: 0 });
+    // Fetch acting user's location (fallback village)
+    let ownerLoc: string | null = null;
+    try {
+      const { data: ownerRows } = await sb.from('users').select('location').eq('id', actingAsUserId).limit(1);
+      ownerLoc = ownerRows && ownerRows.length ? ownerRows[0].location : null;
+    } catch {}
+    for (const w of incomingWells) {
       try {
-        await sb.from('user_wells').upsert({
+        const lat = w.location?.lat ?? w.lat ?? null;
+        const lng = w.location?.lng ?? w.lng ?? null;
+        const newStatus = (w.status || 'active') as string;
+        let previousStatus: string | null = null;
+        // Fetch existing status to avoid duplicate alert emails
+        if (w.id) {
+          try {
+            const { data: existingRows } = await sb.from('user_wells').select('status,user_id').eq('id', w.id).limit(1);
+            if (existingRows && existingRows.length) {
+              previousStatus = existingRows[0].status as string;
+            }
+          } catch {}
+        }
+        const { error: upErr } = await sb.from('user_wells').upsert({
           id: w.id,
           user_id: actingAsUserId,
           name: w.name,
-          panchayat_name: w.panchayat_name || null,
-          lat: w.location?.lat ?? null,
-          lng: w.location?.lng ?? null,
-          status: w.status || 'active'
+          panchayat_name: w.panchayat_name || w.panchayatName || null,
+            village_name: w.village_name || w.village || ownerLoc || null,
+          lat,
+          lng,
+          status: newStatus
         });
+        if (upErr) {
+          console.warn('Well upsert error', upErr);
+          continue;
+        }
+        // Trigger email alert if status is warning/critical and changed OR new
+        if ((newStatus === 'warning' || newStatus === 'critical') && previousStatus !== newStatus) {
+          // Get owner email & optional phone / location for context
+          try {
+            const { data: ownerRows } = await sb.from('users').select('email,phone,location').eq('id', actingAsUserId).limit(1);
+            const owner = ownerRows && ownerRows.length ? ownerRows[0] : null;
+            if (owner?.email) {
+              await sendWellStatusAlertEmail({
+                to: owner.email,
+                well: {
+                  id: w.id,
+                  name: w.name,
+                  status: newStatus as 'warning' | 'critical',
+                  panchayat_name: w.panchayat_name || w.panchayatName || null,
+                  village_name: w.village_name || w.village || ownerLoc || null,
+                  lat: lat ?? null,
+                  lng: lng ?? null
+                },
+                metrics: {
+                  ph: w.data?.ph ?? null,
+                  tds: w.data?.tds ?? null,
+                  temperature: w.data?.temperature ?? null,
+                  waterLevel: w.data?.waterLevel ?? null,
+                  recordedAt: w.data?.lastUpdated || new Date().toISOString()
+                },
+                previousStatus
+              });
+            }
+          } catch (mailErr) {
+            console.warn('Well alert email send failed', mailErr);
+          }
+        }
       } catch (e) {
-        console.warn('Well upsert error', e);
+        console.warn('Well upsert general error', e);
       }
     }
-    return NextResponse.json({ ok: true, count: wells.length });
+    return NextResponse.json({ ok: true, count: incomingWells.length });
   } catch (e) {
     return NextResponse.json({ error: 'Save failed' }, { status: 500 });
   }

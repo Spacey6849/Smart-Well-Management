@@ -1,6 +1,30 @@
 export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
+// Keep a POST endpoint (JSON) and a GET endpoint (redirect-friendly) for verification flexibility.
+export async function POST(req: NextRequest) {
+  try {
+    const { token } = await req.json();
+    if (!token) return NextResponse.json({ error: 'Missing token' }, { status: 400 });
+    const sb = supabaseServer();
+    const { data: rows, error } = await sb
+      .from('users')
+      .select('id')
+      .eq('email_verification_token', token)
+      .limit(1);
+    if (error) return NextResponse.json({ error: 'Verification failed' }, { status: 500 });
+    if (!rows || !rows.length) return NextResponse.json({ error: 'Invalid token' }, { status: 400 });
+    const { error: updErr } = await sb
+      .from('users')
+      .update({ email_verified: true, email_verification_token: null })
+      .eq('id', rows[0].id);
+    if (updErr) return NextResponse.json({ error: 'Verification update failed' }, { status: 500 });
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    console.error('Verify error', e);
+    return NextResponse.json({ error: 'Verification failed' }, { status: 500 });
+  }
+}
 export async function GET(req: NextRequest) {
   const wantsJson = req.headers.get('accept')?.includes('application/json');
   const token = req.nextUrl.searchParams.get('token');

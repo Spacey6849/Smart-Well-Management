@@ -108,7 +108,29 @@ export function AuthOverlayProvider({ children }: { children: React.ReactNode })
                         }
                       }
                       // Panchayat login
-                      const resp = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ identifier, password }) });
+                      // Add a manual timeout so the UI doesn't hang on network stalls
+                      const ctrl = new AbortController();
+                      const t = setTimeout(() => ctrl.abort(), 12000); // 12s timeout
+                      let resp: Response;
+                      try {
+                        resp = await fetch('/api/auth/login', { 
+                          method: 'POST', 
+                          headers: { 'Content-Type': 'application/json' }, 
+                          body: JSON.stringify({ identifier, password }),
+                          signal: ctrl.signal,
+                          cache: 'no-store'
+                        });
+                      } catch(fetchErr: any){
+                        clearTimeout(t);
+                        if (fetchErr?.name === 'AbortError') {
+                          setError('Login request timed out – check your connection.');
+                        } else {
+                          setError('Network error connecting to server. Is the dev server running?');
+                        }
+                        setSubmitting(false);
+                        return;
+                      }
+                      clearTimeout(t);
                       if (!resp.ok) {
                         const j = await resp.json().catch(()=>({error:'Login failed'}));
                         setError(j.error || 'Login failed'); setSubmitting(false); return;

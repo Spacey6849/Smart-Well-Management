@@ -1,40 +1,18 @@
 import { createClient } from '@supabase/supabase-js';
 import { redactedEnvSnapshot } from '../env-guard';
 
-function sanitize(v?: string) {
-  if (!v) return v as any;
-  const trimmed = v.trim();
-  if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
-    return trimmed.slice(1, -1);
-  }
-  return trimmed;
+function sanitize(v?: string){
+  if(!v) return '';
+  const t = v.trim();
+  if ((t.startsWith('"') && t.endsWith('"')) || (t.startsWith("'") && t.endsWith("'"))) return t.slice(1,-1);
+  return t;
 }
-
-const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const rawAnon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const url = sanitize(rawUrl)!;
-const anon = sanitize(rawAnon)!;
-
+const url = sanitize(process.env.NEXT_PUBLIC_SUPABASE_URL);
+const anon = sanitize(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 if (!url || !anon) {
-  if (process.env.NODE_ENV !== 'production') {
-    console.warn('[supabase/client] Missing Supabase env vars', redactedEnvSnapshot());
-  }
+  if (process.env.NODE_ENV !== 'production') console.warn('[supabase/client] Missing Supabase env vars', redactedEnvSnapshot());
 } else if (process.env.NODE_ENV !== 'production') {
-  if (rawAnon && rawAnon.trim().startsWith('"')) {
-    console.warn('[supabase/client] Anon key had wrapping quotes; they were stripped. Remove quotes in .env');
-  }
-  console.log('[supabase/client] Supabase browser client configured', redactedEnvSnapshot());
+  console.log('[supabase/client] configured', redactedEnvSnapshot());
 }
-
-export const supabase = createClient(url, anon, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true
-  }
-});
-
-export function getSupabase() { return supabase; }
-
-export const SUPABASE_URL = url;
-export const SUPABASE_ANON_KEY = anon;
+export const supabase = createClient(url, anon, { auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true }, global:{ headers:{ 'X-Client-Info':'ecowell/browser'} } });
+export function getSupabase(){ return supabase; }

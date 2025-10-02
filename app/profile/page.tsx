@@ -259,7 +259,16 @@ export default function ProfilePage() {
                 // refresh wells
                 (async ()=>{
                   setWellsLoading(true); setWellMessage(null);
-                  try { const r = await fetch('/api/wells'); const j = await r.json(); setWells(j.wells||[]);} catch { setWellMessage('Reload failed'); } finally { setWellsLoading(false);} })();
+                  try {
+                    const r = await fetch('/api/wells');
+                    const j = await r.json();
+                    const mapped = (j.wells||[]).map((w:any)=>({
+                      ...w,
+                      village_name: w.village_name || w.location || null,
+                      contact_phone: w.contact_phone || w.phone || null
+                    }));
+                    setWells(mapped);
+                  } catch { setWellMessage('Reload failed'); } finally { setWellsLoading(false);} })();
               }} className={`text-xs font-medium underline-offset-4 hover:underline ${isDark ? 'text-blue-300 hover:text-blue-200' : 'text-blue-600 hover:text-blue-500'}`}>Reload</button>
             </div>
             {wellsLoading && <div className={`text-xs mb-4 ${isDark ? 'text-white/60' : 'text-gray-500'}`}>Loading wells...</div>}

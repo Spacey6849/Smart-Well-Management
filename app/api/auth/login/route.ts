@@ -27,6 +27,12 @@ export async function POST(req: NextRequest) {
     let sb;
     try {
       sb = supabaseServer();
+      // tiny probe to catch invalid key earlier (select 1 style) – lightweight metadata request
+      const probe = await sb.from('users').select('id').limit(1);
+      if (probe.error && /invalid api key/i.test(probe.error.message)) {
+        console.error('[login] probe invalid api key', probe.error, redactedEnvSnapshot());
+        return NextResponse.json({ error: 'Backend Supabase key invalid – check server env (SERVICE role key)' }, { status: 500 });
+      }
     } catch (e) {
       console.error('[login] Failed to create Supabase client', e, redactedEnvSnapshot());
       return NextResponse.json({ error: 'Auth service unavailable' }, { status: 500 });

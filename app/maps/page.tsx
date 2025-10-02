@@ -43,9 +43,9 @@ export default function MapsPage() {
           const transformed: WellData[] = (j.wells || []).map((row: any) => ({
             id: row.id,
             name: row.name,
-            village: row.location || undefined,
+            village: row.village_name || row.location || undefined,
             panchayatName: row.panchayat_name || undefined,
-            contactNumber: row.phone || undefined,
+            contactNumber: row.contact_phone || row.phone || undefined,
             location: { lat: row.lat, lng: row.lng },
             status: row.status || 'active',
             data: { 
