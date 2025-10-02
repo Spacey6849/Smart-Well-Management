@@ -11,8 +11,6 @@
     "db:migrate": "node scripts/run-migrations.js"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.47.10",
-    "@types/bcryptjs": "^2.4.6",
     "@google/generative-ai": "^0.11.0",
     "@hookform/resolvers": "^3.9.0",
     "@next/swc-wasm-nodejs": "13.5.1",
@@ -43,6 +41,8 @@
     "@radix-ui/react-toggle": "^1.1.0",
     "@radix-ui/react-toggle-group": "^1.1.0",
     "@radix-ui/react-tooltip": "^1.1.2",
+    "@supabase/supabase-js": "^2.47.10",
+    "@types/bcryptjs": "^2.4.6",
     "@types/leaflet": "^1.9.20",
     "@types/node": "20.6.2",
     "@types/react": "18.2.22",
@@ -52,39 +52,37 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
-    "lucide-react": "^0.446.0",
-    "mysql2": "^3.14.4",
+    "date-fns": "^3.6.0",
+    "embla-carousel-react": "^8.3.0",
+    "eslint": "8.49.0",
+    "eslint-config-next": "13.5.1",
+    "framer-motion": "^12.23.12",
     "input-otp": "^1.2.4",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.446.0",
-<<<<<<< HEAD
     "mysql2": "^3.14.4",
-=======
->>>>>>> origin/main
     "next": "13.5.1",
-    "react-markdown": "^9.0.1",
-    "remark-gfm": "^4.0.0",
+    "next-themes": "^0.3.0",
+    "nodemailer": "^6.9.13",
+    "postcss": "8.4.30",
+    "react": "18.2.0",
+    "react-day-picker": "^8.10.1",
+    "react-dom": "18.2.0",
     "react-hook-form": "^7.53.0",
     "react-leaflet": "^4.2.1",
+    "react-markdown": "^9.0.1",
     "react-resizable-panels": "^2.1.3",
-<<<<<<< HEAD
-=======
-  "react-markdown": "^9.0.1",
-  "remark-gfm": "^4.0.0",
->>>>>>> origin/main
     "recharts": "^2.15.4",
+    "remark-gfm": "^4.0.0",
     "sonner": "^1.5.0",
     "tailwind-merge": "^2.5.2",
+    "tailwindcss": "3.3.3",
+    "tailwindcss-animate": "^1.0.7",
+    "typescript": "5.2.2",
+    "uuid": "^11.1.0",
+    "vaul": "^0.9.9",
+    "zod": "^3.23.8"
+  },
   "devDependencies": {},
-  "engines": {
-    "node": "^20.0.0"
-  }
-}
-    "@types/bcryptjs": "^2.4.6"
-=======
-  "devDependencies": {},
-  "engines": {
-    "node": "^20.0.0"
->>>>>>> origin/main
-  }
+  "engines": { "node": "^20.0.0" }
 }
