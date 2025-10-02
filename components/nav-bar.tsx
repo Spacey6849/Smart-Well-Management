@@ -19,10 +19,7 @@ type NavLink = {
 };
 
 const links: NavLink[] = [
-<<<<<<< HEAD
   { href: "/", label: "Home" },
-=======
->>>>>>> origin/main
   { href: "/maps", label: "Map" },
   // Setup handled via custom button (still kept for mapping consistency but rendered differently)
   { href: "/setup/wells", label: "Setup" },
@@ -33,22 +30,14 @@ const links: NavLink[] = [
 export function NavBar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-<<<<<<< HEAD
-  const currentMode = (searchParams.get("mode") as "login" | "signup" | null) || "login";
-=======
   const currentMode = (searchParams?.get("mode") as "login" | "signup" | null) || "login";
->>>>>>> origin/main
   const { openLogin, openSignup } = useAuthOverlay();
   const router = useRouter();
   const { user, loading, signOut, role } = useUser();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { theme } = useTheme();
-<<<<<<< HEAD
-  const profileDarkOverride = pathname === '/profile' && theme === 'dark';
-=======
   const safePathname = pathname ?? '';
   const profileDarkOverride = safePathname === '/profile' && theme === 'dark';
->>>>>>> origin/main
 
   // Close mobile panel when path changes
   useEffect(() => { setMobileOpen(false); }, [pathname]);
@@ -68,27 +57,16 @@ export function NavBar() {
               const basePath = l.href.split("?")[0];
               let active: boolean;
               if (basePath === "/auth") {
-<<<<<<< HEAD
-                active = pathname === "/auth" && (l.mode || "login") === currentMode;
-              } else if (basePath === "/maps") {
-                active = pathname === "/maps";
-              } else if (basePath === "/") {
-                active = pathname === "/";
-              } else if (basePath === "/setup/wells") {
-                // Mark active for /setup/wells and any future deeper sub-routes under it.
-                active = pathname === "/setup/wells" || pathname.startsWith("/setup/wells/");
-              } else {
-                active = pathname === basePath;
-=======
                 active = safePathname === "/auth" && (l.mode || "login") === currentMode;
               } else if (basePath === "/maps") {
                 active = safePathname === "/maps";
+              } else if (basePath === "/") {
+                active = safePathname === "/";
               } else if (basePath === "/setup/wells") {
                 // Mark active for /setup/wells and any future deeper sub-routes under it.
                 active = safePathname === "/setup/wells" || safePathname.startsWith("/setup/wells/");
               } else {
                 active = safePathname === basePath;
->>>>>>> origin/main
               }
               const base = "relative px-3 py-2 text-sm font-medium rounded-xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50";
               const activeClasses = profileDarkOverride ? "text-white bg-white/10 border border-emerald-400/35 shadow-inner ring-1 ring-emerald-400/20" : "text-gray-900 dark:text-white bg-white/70 dark:bg-white/10 border border-emerald-500/40 dark:border-emerald-400/35 shadow-inner ring-1 ring-emerald-500/15 dark:ring-emerald-400/20";
@@ -104,17 +82,10 @@ export function NavBar() {
                     title="Go to setup"
                     className={`${base} ${active ? activeClasses : normal}`}
                     onClick={(e) => {
-<<<<<<< HEAD
-                      console.log('Setup button clicked!', { pathname, target: '/setup/wells' });
-                      try {
-                        e.stopPropagation();
-                        if (pathname !== '/setup/wells') {
-=======
                       console.log('Setup button clicked!', { pathname: safePathname, target: '/setup/wells' });
                       try {
                         e.stopPropagation();
                         if (safePathname !== '/setup/wells') {
->>>>>>> origin/main
                           console.log('Navigating to /setup/wells');
                           router.push('/setup/wells');
                         } else {
@@ -221,23 +192,14 @@ export function NavBar() {
               const basePath = l.href.split('?')[0];
               let active: boolean;
               if (basePath === '/auth') {
-<<<<<<< HEAD
-                active = pathname === '/auth' && (l.mode || 'login') === currentMode;
-              } else if (basePath === '/maps') {
-                active = pathname === '/maps';
-              } else if (basePath === '/') {
-                active = pathname === '/';
-              } else if (basePath === '/setup/wells') {
-                active = pathname === '/setup/wells' || pathname.startsWith('/setup/wells/');
-              } else { active = pathname === basePath; }
-=======
                 active = safePathname === '/auth' && (l.mode || 'login') === currentMode;
               } else if (basePath === '/maps') {
                 active = safePathname === '/maps';
+              } else if (basePath === '/') {
+                active = safePathname === '/';
               } else if (basePath === '/setup/wells') {
                 active = safePathname === '/setup/wells' || safePathname.startsWith('/setup/wells/');
               } else { active = safePathname === basePath; }
->>>>>>> origin/main
               if (l.mode === 'signup') return null; // signup handled separately
               if (user && l.mode === 'login') return null; // hide login if authenticated
               if (!user && (l.mode === 'login')) {

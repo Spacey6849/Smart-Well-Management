@@ -4,11 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { useTheme } from 'next-themes';
 import { useRouter, useSearchParams } from "next/navigation";
 import 'leaflet/dist/leaflet.css';
-<<<<<<< HEAD
-=======
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useUser } from '@/components/user-context';
->>>>>>> origin/main
 
 // We instantiate Leaflet manually because we disable interaction; dynamic import helps tree-shaking
 // but here we can access it via global import (Leaflet CSS already imported).
@@ -17,12 +14,6 @@ export default function AuthPage() {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const searchParams = useSearchParams();
   const router = useRouter();
-<<<<<<< HEAD
-  const initialMode = (searchParams.get("mode") as "login" | "signup" | null) || "login";
-  const [mode, setMode] = useState<"login" | "signup">(initialMode);
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
-=======
   const initialMode = (searchParams?.get("mode") as "login" | "signup" | null) || "login";
   const [mode, setMode] = useState<"login" | "signup">(initialMode);
   const { theme } = useTheme();
@@ -35,7 +26,6 @@ export default function AuthPage() {
   const [notice, setNotice] = useState<{ kind: 'success'|'error'|'info', text: string }|null>(null);
   const { refresh } = useUser();
   // forgot password now uses dedicated page /auth/forgot
->>>>>>> origin/main
 
   // Initialize Leaflet map only once client-side
   useEffect(() => {
@@ -72,16 +62,12 @@ export default function AuthPage() {
 
   // Keep state in sync if user changes query manually (back/forward buttons)
   useEffect(() => {
-<<<<<<< HEAD
-    const qp = (searchParams.get("mode") as "login" | "signup" | null) || "login";
+    const qp = (searchParams?.get("mode") as "login" | "signup" | null) || "login";
     if (qp !== mode) setMode(qp);
-=======
-  const qp = (searchParams?.get("mode") as "login" | "signup" | null) || "login";
-    if (qp !== mode) setMode(qp);
-    // Show banners based on verification outcome
-  const verified = searchParams?.get('verified');
-  const vErr = searchParams?.get('verify_error');
-  const resetOk = searchParams?.get('reset');
+    // Show banners based on verification outcome (query params from verification/reset flows)
+    const verified = searchParams?.get('verified');
+    const vErr = searchParams?.get('verify_error');
+    const resetOk = searchParams?.get('reset');
     if (verified === '1') {
       setNotice({ kind: 'success', text: 'Email verified successfully. You can now log in.' });
       setMode('login');
@@ -98,38 +84,24 @@ export default function AuthPage() {
       setNotice({ kind: 'success', text: 'Password updated. You can now log in with your new password.' });
       setMode('login');
     }
->>>>>>> origin/main
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   return (
-  <div className={`relative min-h-screen w-full overflow-hidden font-sans ${isDark ? 'text-white' : 'text-gray-900'}`}>
+    <div className={`relative min-h-screen w-full overflow-hidden font-sans ${isDark ? 'text-white' : 'text-gray-900'}`}>
       {/* Map Background */}
-<<<<<<< HEAD
-      <div ref={mapRef} className="absolute inset-0 -z-20" />
+      <div ref={mapRef} className="absolute inset-0 -z-20 pointer-events-none" />
       {/* Overlays / gradient noise for depth */}
-      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_30%_20%,rgba(0,200,255,0.18),transparent_60%),radial-gradient(circle_at_85%_75%,rgba(0,255,200,0.15),transparent_55%)]" />
-  <div className={`absolute inset-0 -z-10 ${isDark ? 'bg-[linear-gradient(rgba(0,0,0,0.55),rgba(0,0,0,0.7))]' : 'bg-[linear-gradient(rgba(255,255,255,0.75),rgba(240,244,248,0.85))]'}`} />
+      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_30%_20%,rgba(0,200,255,0.16),transparent_60%),radial-gradient(circle_at_85%_75%,rgba(0,255,200,0.12),transparent_55%)]" />
+      <div className={`absolute inset-0 -z-10 ${isDark ? 'bg-[linear-gradient(rgba(0,0,0,0.62),rgba(0,0,0,0.86))]' : 'bg-[linear-gradient(rgba(255,255,255,0.92),rgba(240,244,248,0.96))]'}`} />
+      {/* Vignette for focus */}
+      <div className="absolute inset-0 -z-10 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_40%,rgba(0,0,0,0.4)_85%)]" />
 
-      <main className="min-h-screen px-4 sm:px-5 pb-10 sm:pb-14 flex flex-col overflow-y-auto sm:pt-14">
-        {/* Mobile spacer to offset fixed nav (approx 60px total) */}
-        <div className="h-[60px] sm:hidden shrink-0" aria-hidden />
-        <section
-          className={`relative w-full max-w-md mt-2 sm:mt-0 backdrop-blur-xl rounded-3xl border px-5 py-7 sm:px-9 sm:py-9 overflow-hidden shadow-[0_8px_42px_-6px_rgba(0,0,0,0.55)] ${isDark ? 'border-white/15 bg-white/10' : 'border-gray-200 bg-white/80'} `}
-=======
-    <div ref={mapRef} className="absolute inset-0 -z-20 pointer-events-none" />
-      {/* Overlays / gradient noise for depth */}
-    <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_30%_20%,rgba(0,200,255,0.16),transparent_60%),radial-gradient(circle_at_85%_75%,rgba(0,255,200,0.12),transparent_55%)]" />
-  <div className={`absolute inset-0 -z-10 ${isDark ? 'bg-[linear-gradient(rgba(0,0,0,0.62),rgba(0,0,0,0.86))]' : 'bg-[linear-gradient(rgba(255,255,255,0.92),rgba(240,244,248,0.96))]'}`} />
-    {/* Vignette for focus */}
-    <div className="absolute inset-0 -z-10 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_40%,rgba(0,0,0,0.4)_85%)]" />
-
-  <main className="min-h-screen px-4 sm:px-5 pb-10 sm:pb-14 flex flex-col overflow-y-auto sm:pt-14 sm:items-center sm:justify-center">
+      <main className="min-h-screen px-4 sm:px-5 pb-10 sm:pb-14 flex flex-col overflow-y-auto sm:pt-14 sm:items-center sm:justify-center">
         {/* Mobile spacer to offset fixed nav (approx 60px total) */}
         <div className="h-[60px] sm:hidden shrink-0" aria-hidden />
         <section
           className={`relative w-full max-w-md mt-2 sm:mt-0 mx-auto backdrop-blur-xl rounded-3xl border px-5 py-7 sm:px-9 sm:py-9 overflow-hidden shadow-[0_8px_42px_-6px_rgba(0,0,0,0.55)] ${isDark ? 'border-white/15 bg-white/10' : 'border-gray-200 bg-white/80'} `}
->>>>>>> origin/main
           aria-label="Authentication"
         >
           <header className="relative mb-8 text-center">
@@ -144,12 +116,6 @@ export default function AuthPage() {
           <div className="relative min-h-[320px]">
             {/* Login Form */}
             <form
-<<<<<<< HEAD
-              onSubmit={(e) => { e.preventDefault(); alert('Login (demo)'); }}
-              className={`space-y-5 transition-opacity duration-300 ${mode === 'login' ? 'opacity-100' : 'opacity-0 pointer-events-none absolute inset-0'}`}
-              autoComplete="on"
-            >
-=======
               onSubmit={async (e) => {
                 e.preventDefault();
                 setSubmitting(true); setError(null);
@@ -179,7 +145,6 @@ export default function AuthPage() {
                   {notice.text}
                 </div>
               )}
->>>>>>> origin/main
               <div>
                 <label htmlFor="login-email" className={`block text-[13px] font-medium mb-1.5 ${isDark ? 'text-white/75' : 'text-gray-600'}`}>Email Address</label>
                 <input id="login-email" type="email" required placeholder="you@example.com" className={`block w-full rounded-xl focus:ring-0 text-sm px-4 py-3 outline-none transition ${isDark ? 'bg-white/10 border border-white/25 focus:border-blue-400/70 placeholder-white/40' : 'bg-white border border-gray-300 focus:border-blue-500/60 placeholder-gray-400 text-gray-800'}`} />
@@ -187,28 +152,17 @@ export default function AuthPage() {
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label htmlFor="login-password" className={`block text-[13px] font-medium ${isDark ? 'text-white/75' : 'text-gray-600'}`}>Password</label>
-<<<<<<< HEAD
-                  <a href="#" className={`text-[11px] font-medium transition ${isDark ? 'text-blue-300 hover:text-blue-200' : 'text-blue-600 hover:text-blue-500'}`}>Forgot?</a>
-                </div>
-                <input id="login-password" type="password" required placeholder="••••••••" className={`block w-full rounded-xl focus:ring-0 text-sm px-4 py-3 outline-none transition ${isDark ? 'bg-white/10 border border-white/25 focus:border-blue-400/70 placeholder-white/40' : 'bg-white border border-gray-300 focus:border-blue-500/60 placeholder-gray-400 text-gray-800'}`} />
-              </div>
-              <button type="submit" className={`w-full inline-flex justify-center items-center gap-2 rounded-xl text-sm font-medium tracking-wide text-white px-5 py-3 transition focus-visible:outline-none focus-visible:ring-2 shadow-lg ${isDark ? 'bg-blue-600 hover:bg-blue-500 active:bg-blue-700 focus-visible:ring-blue-300/60 shadow-blue-900/30' : 'bg-blue-600 hover:bg-blue-500 active:bg-blue-700 focus-visible:ring-blue-400/50 shadow-blue-500/30'}`}>Log In</button>
-=======
                   <a href="/auth/forgot" className={`text-[11px] font-medium transition ${isDark ? 'text-blue-300 hover:text-blue-200' : 'text-blue-600 hover:text-blue-500'}`}>Forgot?</a>
                 </div>
                 <input id="login-password" type="password" required placeholder="••••••••" className={`block w-full rounded-xl focus:ring-0 text-sm px-4 py-3 outline-none transition ${isDark ? 'bg-white/10 border border-white/25 focus:border-blue-400/70 placeholder-white/40' : 'bg-white border border-gray-300 focus:border-blue-500/60 placeholder-gray-400 text-gray-800'}`} />
               </div>
               {error && <p className={`text-[12px] ${isDark ? 'text-red-300' : 'text-red-600'}`}>{error}</p>}
               <button disabled={submitting} type="submit" className={`w-full inline-flex justify-center items-center gap-2 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium tracking-wide text-white px-5 py-3 transition focus-visible:outline-none focus-visible:ring-2 shadow-lg ${isDark ? 'bg-blue-600 hover:bg-blue-500 active:bg-blue-700 focus-visible:ring-blue-300/60 shadow-blue-900/30' : 'bg-blue-600 hover:bg-blue-500 active:bg-blue-700 focus-visible:ring-blue-400/50 shadow-blue-500/30'}`}>{submitting? 'Signing in...' : 'Log In'}</button>
->>>>>>> origin/main
               <p className={`text-center text-[13px] ${isDark ? 'text-white/70' : 'text-gray-600'}`}>Don&apos;t have an account? <button type="button" onClick={()=>switchMode('signup')} className={`font-medium underline-offset-4 hover:underline transition ${isDark ? 'text-blue-300 hover:text-blue-200' : 'text-blue-600 hover:text-blue-500'}`}>Sign up</button></p>
             </form>
 
             {/* Signup Form */}
             <form
-<<<<<<< HEAD
-              onSubmit={(e) => { e.preventDefault(); const pw = (document.getElementById('signup-password') as HTMLInputElement)?.value; const cf = (document.getElementById('signup-confirm') as HTMLInputElement)?.value; if (pw !== cf) { alert('Passwords do not match.'); return;} alert('Account created (demo)'); switchMode('login'); }}
-=======
               onSubmit={async (e) => { 
                 e.preventDefault();
                 setSubmitting(true); setError(null);
@@ -245,7 +199,6 @@ export default function AuthPage() {
                   setSubmitting(false);
                 }
               }}
->>>>>>> origin/main
               className={`transition-opacity duration-300 ${mode === 'signup' ? 'opacity-100' : 'opacity-0 pointer-events-none absolute inset-0'}`}
               autoComplete="on"
             >
@@ -283,12 +236,8 @@ export default function AuthPage() {
                   <label htmlFor="signup-confirm" className={`block text-[13px] font-medium mb-1.5 ${isDark ? 'text-white/75' : 'text-gray-600'}`}>Confirm Password</label>
                   <input id="signup-confirm" type="password" required placeholder="••••••••" className={`block w-full rounded-xl focus:ring-0 text-sm px-4 py-3 outline-none transition ${isDark ? 'bg-white/10 border border-white/20 focus:border-emerald-400/70 placeholder-white/40' : 'bg-white border border-gray-300 focus:border-emerald-500/60 placeholder-gray-400 text-gray-800'}`} />
                 </div>
-<<<<<<< HEAD
-                <button type="submit" className={`mt-2 w-full inline-flex justify-center items-center gap-2 rounded-xl text-sm font-medium tracking-wide text-white px-5 py-3 transition focus-visible:outline-none focus-visible:ring-2 shadow-lg ${isDark ? 'bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 focus-visible:ring-emerald-300/60 shadow-emerald-900/30' : 'bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 focus-visible:ring-emerald-400/50 shadow-emerald-500/30'}`}>Sign Up</button>
-=======
                 {error && <p className={`text-[12px] ${isDark ? 'text-red-300' : 'text-red-600'}`}>{error}</p>}
                 <button disabled={submitting} type="submit" className={`mt-2 w-full inline-flex justify-center items-center gap-2 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium tracking-wide text-white px-5 py-3 transition focus-visible:outline-none focus-visible:ring-2 shadow-lg ${isDark ? 'bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 focus-visible:ring-emerald-300/60 shadow-emerald-900/30' : 'bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 focus-visible:ring-emerald-400/50 shadow-emerald-500/30'}`}>{submitting? 'Creating...' : 'Sign Up'}</button>
->>>>>>> origin/main
                 <p className={`text-center text-[13px] mb-3 ${isDark ? 'text-white/70' : 'text-gray-600'}`}>Already have an account? <button type="button" onClick={()=>switchMode('login')} className={`font-medium underline-offset-4 hover:underline transition ${isDark ? 'text-emerald-300 hover:text-emerald-200' : 'text-emerald-600 hover:text-emerald-500'}`}>Log in</button></p>
               </div>
             </form>
@@ -299,9 +248,6 @@ export default function AuthPage() {
           </footer>
         </section>
       </main>
-<<<<<<< HEAD
-=======
-
       {/* Email Confirmation Modal */}
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent className={isDark ? 'bg-neutral-900 text-white border-white/10' : ''}>
@@ -347,9 +293,7 @@ export default function AuthPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       {/* Forgot Password now uses a dedicated page (/auth/forgot) */}
->>>>>>> origin/main
     </div>
   );
 }
