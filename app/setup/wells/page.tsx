@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUser } from '@/components/user-context';
 import { useTheme } from 'next-themes';
@@ -8,10 +8,13 @@ import 'leaflet/dist/leaflet.css';
 import { v4 as uuid } from 'uuid';
 import { generateHistory, WellData } from '@/lib/well-data';
 
-interface DraftWell { id: string; name: string; village?: string; panchayat_name?: string; lat: string; lng: string; }
+interface DraftWell { id: string; name: string; village?: string; panchayat_name?: string; lat: string; lng: string; contact_phone?: string | null }
+
+interface ExistingWellRow { id: string; name: string; village_name?: string | null; panchayat_name?: string | null; lat: number; lng: number; contact_phone?: string | null; status?: string }
 
 export default function SetupWellsPage() {
-	const [wells, setWells] = useState<DraftWell[]>([]);
+	const [wells, setWells] = useState<DraftWell[]>([]); // both existing + drafts
+	const [existingIds, setExistingIds] = useState<Set<string>>(new Set());
 	const [saving, setSaving] = useState(false);
 	const [form, setForm] = useState<{ name: string; village: string; panchayat_name: string; lat: string; lng: string }>({ name: '', village: '', panchayat_name: '', lat: '', lng: '' });
 	const [error, setError] = useState<string | null>(null);
@@ -132,24 +135,57 @@ export default function SetupWellsPage() {
 	const doRemove = () => { if (confirmRemoveId) { removeWell(confirmRemoveId); setConfirmRemoveId(null);} };
 	const cancelRemove = () => setConfirmRemoveId(null);
 
+	const loadExisting = useCallback(async () => {
+		if (!user) return;
+		try {
+			const resp = await fetch('/api/wells', { cache: 'no-store' });
+			if (!resp.ok) return;
+			const j = await resp.json();
+			const rows: ExistingWellRow[] = j.wells || [];
+			const mapped: DraftWell[] = rows.map(r => ({
+				id: r.id,
+				name: r.name,
+				village: r.village_name || undefined,
+				panchayat_name: r.panchayat_name || undefined,
+				lat: String(r.lat),
+				lng: String(r.lng),
+				contact_phone: r.contact_phone || null
+			}));
+			setExistingIds(new Set(mapped.map(m => m.id)));
+			setWells(current => {
+				// Keep any draft wells not yet saved (those not in existingIds)
+				const drafts = current.filter(c => !mapped.find(m => m.id === c.id));
+				return [...mapped, ...drafts];
+			});
+		} catch (e) {
+			// ignore
+		}
+	}, [user]);
+
+	useEffect(() => { loadExisting(); }, [loadExisting]);
+
 	const persist = async () => {
 		setSaving(true);
-		 const payload: any[] = wells.map(w => ({
+		// Only send drafts (those not in existingIds) to API
+		const draftPayload = wells.filter(w => !existingIds.has(w.id)).map(w => ({
 			id: w.id,
 			name: w.name || 'Untitled Well',
 			village: w.village,
-			 panchayat_name: w.panchayat_name,
+			panchayat_name: w.panchayat_name,
 			location: { lat: Number(w.lat), lng: Number(w.lng) },
 			data: { ph: 7.2, tds: 360, temperature: 26.1, waterLevel: 42, lastUpdated: new Date() },
 			status: 'active',
 			history: generateHistory()
 		}));
-		localStorage.setItem('customWells', JSON.stringify(payload));
-		if (user) {
-			// TODO: send to /api/wells (POST) endpoint for persistence when implemented
-			try { await fetch('/api/wells', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ wells: payload }) }); } catch {}
+		if (draftPayload.length && user) {
+			try { await fetch('/api/wells', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ wells: draftPayload }) }); } catch {}
 		}
-		setTimeout(() => { setSaving(false); setToast('Wells saved successfully'); setTimeout(()=> setToast(null), 3000); }, 500);
+		// Merge into existing after a short delay
+		setTimeout(async () => {
+			setSaving(false);
+			if (draftPayload.length) await loadExisting();
+			setToast('Wells saved successfully'); setTimeout(()=> setToast(null), 3000);
+		}, 500);
 	};
 
 	return (
@@ -237,18 +273,28 @@ export default function SetupWellsPage() {
 															<input value={w.panchayat_name} onClick={e=> e.stopPropagation()} onChange={e=> updateWell(w.id,{panchayat_name:e.target.value})} className="bg-muted/40 dark:bg-white/10 rounded px-1.5 py-0.5 w-full text-[11px] outline-none border border-border/60" placeholder="Panchayat" />
 														</div>
 													)}
+													{w.contact_phone !== undefined && (
+														<div className="col-span-2 flex items-center gap-1.5">
+															<span className="text-muted-foreground/60">Contact</span>
+															<input disabled value={w.contact_phone || ''} onClick={e=> e.stopPropagation()} className="bg-muted/40 dark:bg-white/10 rounded px-1.5 py-0.5 w-full text-[11px] outline-none border border-border/60 disabled:opacity-60" placeholder="Contact" />
+														</div>
+													)}
 												</div>
 											</div>
-											<button type="button" onClick={(e)=> { e.stopPropagation(); confirmRemove(w.id); }} className="ml-auto text-xs text-red-500 hover:text-red-400 rounded-md px-2 py-1.5 bg-red-500/10 hover:bg-red-500/15 transition">Remove</button>
+											{existingIds.has(w.id) ? (
+												<span className="ml-auto text-[10px] px-2 py-1 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-400/30">Saved</span>
+											) : (
+												<button type="button" onClick={(e)=> { e.stopPropagation(); confirmRemove(w.id); }} className="ml-auto text-xs text-red-500 hover:text-red-400 rounded-md px-2 py-1.5 bg-red-500/10 hover:bg-red-500/15 transition">Remove</button>
+											)}
 										</div>
 									</motion.div>
 								))}
 								</AnimatePresence>
-								{wells.length > 0 && <p className="text-[10px] text-muted-foreground">Press <span className="text-emerald-600 dark:text-emerald-300 font-medium">Save All</span> to persist locally.</p>}
+								{wells.length > 0 && <p className="text-[10px] text-muted-foreground">Press <span className="text-emerald-600 dark:text-emerald-300 font-medium">Save All</span> to save new wells to your account.</p>}
 							</div>
 							<div className="pt-5 mt-4 border-t border-border/50 flex items-center gap-4 text-[11px] text-muted-foreground">
 								<a href="/maps" className="underline hover:text-foreground">Back to Map</a>
-								<span>• Stored locally</span>
+								<span>• Synced with server</span>
 							</div>
 						</div>
 					</section>
