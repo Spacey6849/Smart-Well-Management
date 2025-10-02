@@ -1,20 +1,24 @@
-// Supabase client deprecated after migration to MySQL.
-// This stub remains only to fail fast if any leftover imports persist.
+import { createClient } from '@supabase/supabase-js';
 
-// Provide a minimal no-op supabase-like placeholder so existing imports don't break the build.
-// All methods throw if called to surface unintended usage at runtime.
-export const supabase: any = new Proxy(
-  {},
-  {
-    get() {
-      throw new Error('Supabase deprecated: remove usage');
-    }
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+if (!url || !anon) {
+  // Fail fast in dev; in prod this would surface misconfiguration quickly.
+  if (process.env.NODE_ENV !== 'production') {
+    console.warn('[supabase/client] Missing Supabase env vars');
   }
-);
-
-export function getSupabase() {
-  return supabase;
 }
 
-export const SUPABASE_URL = '';
-export const SUPABASE_ANON_KEY = '';
+export const supabase = createClient(url, anon, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true
+  }
+});
+
+export function getSupabase() { return supabase; }
+
+export const SUPABASE_URL = url;
+export const SUPABASE_ANON_KEY = anon;

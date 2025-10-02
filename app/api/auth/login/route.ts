@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { randomUUID, createHash } from 'crypto';
+import { supabaseServer } from '@/lib/supabase-server';
 
 function sessionToken(): string {
   return createHash('sha256').update(randomUUID() + Date.now().toString()).digest('hex');
@@ -10,32 +10,34 @@ function sessionToken(): string {
 export async function POST(req: NextRequest) {
   try {
     const { identifier, password } = await req.json();
-    if (!identifier || !password) return NextResponse.json({ error: 'Missing credentials' }, { status: 400 });
+    if (!identifier || !password)
+      return NextResponse.json({ error: 'Missing credentials' }, { status: 400 });
 
+    const sb = supabaseServer();
     const isEmail = identifier.includes('@');
-    let rows: any[];
-    try {
-      rows = await query<any>(
-        `SELECT id,password_hash,email_verified FROM users WHERE ${isEmail ? 'email' : 'username'} = ? LIMIT 1`,
-        [identifier.toLowerCase()]
-      );
-    } catch (e: any) {
-      if (e?.code === 'ER_BAD_FIELD_ERROR') {
-        rows = await query<any>(
-          `SELECT id,password_hash FROM users WHERE ${isEmail ? 'email' : 'username'} = ? LIMIT 1`,
-          [identifier.toLowerCase()]
-        );
-      } else throw e;
-    }
-    if (!rows.length) return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
-    const user = rows[0];
+    const { data: users, error: selErr } = await sb
+      .from('users')
+      .select('id,password_hash,email_verified')
+      .eq(isEmail ? 'email' : 'username', identifier.toLowerCase())
+      .limit(1);
+    if (selErr) throw selErr;
+    if (!users || !users.length)
+      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+    const user = users[0] as any;
     const ok = await bcrypt.compare(password, user.password_hash);
-  if (!ok) return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
-  if ('email_verified' in user && user.email_verified === 0) return NextResponse.json({ error: 'Email not verified' }, { status: 403 });
+    if (!ok) return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+    if (user.email_verified === false || user.email_verified === 0)
+      return NextResponse.json({ error: 'Email not verified' }, { status: 403 });
 
     const token = sessionToken();
-    const expires = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7);
-  await query('INSERT INTO sessions (id,user_id,token,expires_at) VALUES (UUID(),?,?,?)', [user.id, token, expires]);
+    const expires = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toISOString();
+    const { error: insErr } = await sb.from('sessions').insert({
+      id: randomUUID(),
+      user_id: user.id,
+      token,
+      expires_at: expires
+    });
+    if (insErr) throw insErr;
 
     const res = NextResponse.json({ ok: true });
     res.cookies.set('ecw_session', token, {
@@ -43,7 +45,7 @@ export async function POST(req: NextRequest) {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
-      expires
+      expires: new Date(expires)
     });
     return res;
   } catch (e) {

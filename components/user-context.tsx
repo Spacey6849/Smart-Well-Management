@@ -1,6 +1,6 @@
 "use client";
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-// Supabase removed; using custom minimal user type from MySQL session lookup
+// Using Supabase-backed session (/api/me) for user data
 interface BasicUser { id: string; email: string; username: string; full_name?: string | null; phone?: string | null; panchayat_name?: string | null; location?: string | null; created_at?: string; }
 
 type UserRole = 'admin' | 'panchayat' | null;
@@ -61,9 +61,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
         if (mounted) { setUser(null); setRole(null); setLoading(false); }
       }
     })();
+    // Optional: periodic background refresh (client only) for session expiry updates
+    const interval = setInterval(() => { refresh().catch(()=>{}); }, 5 * 60 * 1000);
     return () => { mounted = false; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
 
   return (
   <Ctx.Provider value={{ user, loading, role, refresh, signOut }}>
