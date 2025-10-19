@@ -32,9 +32,33 @@ export async function GET() {
     console.error('Wells select error', error);
     return NextResponse.json({ wells: [] });
   }
+
+  // Fetch latest metrics for each well
+  const wellIds = (wells || []).map(w => w.id);
+  const metricsMap: Record<string, any> = {};
+  if (wellIds.length > 0) {
+    // Get latest metric per well by ordering by ts DESC and taking first per well_id
+    // For efficiency with many wells, we fetch all recent metrics and reduce in-memory
+    const { data: metrics } = await sb
+      .from('well_metrics')
+      .select('well_id,ph,tds,temperature,water_level,turbidity,ts,well_health')
+      .in('well_id', wellIds)
+      .order('ts', { ascending: false })
+      .limit(wellIds.length * 2); // generous limit to ensure we get latest per well
+    
+    if (metrics) {
+      // Keep only the latest metric per well_id
+      for (const m of metrics) {
+        const wid = m.well_id as string;
+        if (!metricsMap[wid]) metricsMap[wid] = m;
+      }
+    }
+  }
+
   const normalized = (wells || []).map(w => {
     // Supabase returns joined table as array when using alias if multiple possible rows; we expect at most one
     const userRow = Array.isArray((w as any).users) ? (w as any).users[0] : (w as any).users;
+    const latestMetric = metricsMap[w.id as string] || null;
     return {
       id: w.id,
       user_id: w.user_id,
@@ -45,7 +69,8 @@ export async function GET() {
       lng: w.lng,
       status: w.status,
       created_at: w.created_at,
-      contact_phone: userRow?.phone || null
+      contact_phone: userRow?.phone || null,
+      latest_metric: latestMetric
     };
   });
   return NextResponse.json({ wells: normalized });

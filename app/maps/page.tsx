@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { Sidebar } from '@/components/sidebar';
-import { mockWellData, WellData } from '@/lib/well-data';
+import { WellData } from '@/lib/well-data';
 import { motion } from 'framer-motion';
 import { useUser } from '@/components/user-context';
 
@@ -22,70 +22,47 @@ export default function MapsPage() {
     let cancelled = false;
     (async () => {
       if (!user) {
-        // Guest: mock + local custom
-        let initial = [...mockWellData];
-        try {
-          const stored = localStorage.getItem('customWells');
-          if (stored) {
-            const parsed = JSON.parse(stored) as WellData[];
-            parsed.forEach(w => { w.data.lastUpdated = new Date(w.data.lastUpdated); w.history.forEach(h => h.timestamp = new Date(h.timestamp)); });
-            initial = [...initial, ...parsed];
-          }
-        } catch {}
-        if (!cancelled) { setWells(initial); setSelectedWell(initial[0]); }
+        // No demo data: guests see empty map until they login
+        if (!cancelled) { setWells([]); setSelectedWell(undefined); }
         return;
       }
-      // Authenticated: (Placeholder) Fetch wells from future MySQL endpoint
+      // Authenticated: Fetch wells and latest metrics from Supabase
       try {
         const resp = await fetch('/api/wells', { cache: 'no-store' });
         if (resp.ok) {
           const j = await resp.json();
-          const transformed: WellData[] = (j.wells || []).map((row: any) => ({
-            id: row.id,
-            name: row.name,
-            village: row.village_name || row.location || undefined,
-            panchayatName: row.panchayat_name || undefined,
-            contactNumber: row.contact_phone || row.phone || undefined,
-            location: { lat: row.lat, lng: row.lng },
-            status: row.status || 'active',
-            data: { 
-              ph: row.ph != null ? Number(row.ph) : 7.2, 
-              tds: row.tds != null ? Number(row.tds) : 360, 
-              temperature: row.temperature != null ? Number(row.temperature) : 26.1, 
-              waterLevel: row.water_level != null ? Number(row.water_level) : 42, 
-              lastUpdated: row.last_ts ? new Date(row.last_ts) : new Date() 
-            },
-            history: []
-          }));
+          const transformed: WellData[] = (j.wells || []).map((row: any) => {
+            // Prioritize latest metric values, fall back to well row or defaults
+            const latestMetric = row.latest_metric || {};
+            return {
+              id: row.id,
+              name: row.name,
+              village: row.village_name || row.location || undefined,
+              panchayatName: row.panchayat_name || undefined,
+              contactNumber: row.contact_phone || row.phone || undefined,
+              location: { lat: row.lat, lng: row.lng },
+              status: row.status || 'active',
+              data: { 
+                ph: latestMetric.ph != null ? Number(latestMetric.ph) : (row.ph != null ? Number(row.ph) : 7.2), 
+                tds: latestMetric.tds != null ? Number(latestMetric.tds) : (row.tds != null ? Number(row.tds) : 360), 
+                temperature: latestMetric.temperature != null ? Number(latestMetric.temperature) : (row.temperature != null ? Number(row.temperature) : 26.1), 
+                waterLevel: latestMetric.water_level != null ? Number(latestMetric.water_level) : (row.water_level != null ? Number(row.water_level) : 42),
+                turbidity: latestMetric.turbidity != null ? Number(latestMetric.turbidity) : undefined,
+                lastUpdated: latestMetric.ts ? new Date(latestMetric.ts) : (row.last_ts ? new Date(row.last_ts) : new Date())
+              },
+              history: []
+            };
+          });
           if (!cancelled) { setWells(transformed); setSelectedWell(transformed[0]); }
         }
       } catch (e) {
-        console.warn('Failed loading wells API, falling back to mock');
-        if (!cancelled) {
-          setWells(mockWellData); setSelectedWell(mockWellData[0]);
-        }
+        console.warn('Failed loading wells API');
+        if (!cancelled) { setWells([]); setSelectedWell(undefined); }
       }
     })();
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, role]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setWells(current => current.map(well => ({
-        ...well,
-        data: {
-          ...well.data,
-          ph: Math.max(5, Math.min(9, well.data.ph + (Math.random() - 0.5) * 0.1)),
-          tds: Math.max(200, Math.min(800, well.data.tds + (Math.random() - 0.5) * 10)),
-          temperature: Math.max(10, Math.min(35, well.data.temperature + (Math.random() - 0.5) * 0.5)),
-          waterLevel: Math.max(20, Math.min(70, well.data.waterLevel + (Math.random() - 0.5) * 1)),
-          lastUpdated: new Date(),
-        }
-      })));
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
 
   return (
     <div className="h-screen w-full overflow-hidden bg-gradient-to-br from-blue-50 via-white to-cyan-50 dark:from-gray-950 dark:via-gray-900 dark:to-slate-900 relative">

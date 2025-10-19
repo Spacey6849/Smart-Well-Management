@@ -14,7 +14,7 @@ EcoWell AI is a modern web platform for smart well management. It provides inter
 - Interactive map with dark/light mode and well selection
 - Secure authentication (custom login, signup, email verification, password reset)
 - Panchayat and admin roles
-- AI-powered chat assistant (Google Gemini)
+- AI-powered chat assistant (OpenRouter)
 - Email notifications for verification and password reset
 - Responsive, modern UI with accessibility focus
 - Netlify deployment with secrets scanning
@@ -36,6 +36,7 @@ EcoWell AI is a modern web platform for smart well management. It provides inter
 - npm 9+
 - Supabase project (URL + anon key + service role key)
 - SMTP credentials for email verification
+- OpenRouter API key (for AI chat)
 
 ## Setup (Local)
 
@@ -65,6 +66,13 @@ SMTP_PORT=465
 SMTP_USER=your-user
 SMTP_PASS=your-pass
 MAIL_FROM="EcoWell <noreply@example.com>"
+
+# OpenRouter (AI chat)
+OPENROUTER_API_KEY=your-openrouter-key
+# Optional
+OPENROUTER_MODEL=tngtech/deepseek-r1t2-chimera:free
+OPENROUTER_SITE_URL=http://localhost:3000
+OPENROUTER_SITE_TITLE=EcoWell
 ```
 
 3. Run the app
@@ -91,7 +99,7 @@ Required environment variables in Netlify UI (Site settings â†’ Build & deploy â
 - NEXT_PUBLIC_SUPABASE_ANON_KEY
 - SUPABASE_SERVICE_ROLE_KEY
 - SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, MAIL_FROM
-- GEMINI_API_KEY (optional, for chat)
+- OPENROUTER_API_KEY (required for chat)
 - ADMIN_SEED_SECRET (optional)
 
 Notes:
@@ -99,6 +107,10 @@ Notes:
 - Supabase client is created lazily (see `lib/supabase/client.ts`) to avoid build-time env evaluation.
 - Sensitive API routes are marked dynamic/no-store where needed.
 - If a build fails with missing types in production, ensure required `@types/*` packages are regular dependencies (not devDependencies).
+
+Migration note:
+
+- Previous versions used Gemini via `GEMINI_API_KEY`. That variable is no longer used. Configure `OPENROUTER_API_KEY` instead and optionally set `OPENROUTER_MODEL`.
 
 ## Key paths
 

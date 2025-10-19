@@ -40,7 +40,7 @@ export function Sidebar({ wells, selectedWell, onWellSelect, onSearchHighlightCh
   // Start collapsed by default (mobile); expand on desktop after mount
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeChart, setActiveChart] = useState<'ph' | 'tds' | 'temperature' | 'waterLevel'>('ph');
+  const [activeChart, setActiveChart] = useState<'ph' | 'tds' | 'temperature' | 'waterLevel' | 'turbidity'>('ph');
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   const filteredWells = useMemo(() => {
@@ -124,7 +124,7 @@ export function Sidebar({ wells, selectedWell, onWellSelect, onSearchHighlightCh
         onClick={() => setIsCollapsed(!isCollapsed)}
         className={`flex group fixed md:absolute top-1/2 -translate-y-1/2
           ${isCollapsed ? 'left-2' : 'right-2 md:left-[340px] md:right-auto'}
-          z-[1250] w-7 h-14 items-center justify-center rounded-full md:rounded-r-xl bg-white/95 dark:bg-gray-900/90 border border-gray-300/60 dark:border-gray-700/60 shadow-lg hover:bg-white dark:hover:bg-gray-900 hover:shadow-xl transition-all duration-200`}
+          z-[1250] w-8 h-16 items-center justify-center rounded-md bg-white/95 dark:bg-gray-900/90 border border-gray-300/60 dark:border-gray-700/60 shadow-lg hover:bg-white dark:hover:bg-gray-900 hover:shadow-xl transition-all duration-200`}
         aria-label={isCollapsed ? 'Open sidebar' : 'Close sidebar'}
       >
         <motion.div animate={{ rotate: isCollapsed ? 180 : 0 }} transition={{ duration: 0.25 }}>
@@ -269,8 +269,8 @@ export function Sidebar({ wells, selectedWell, onWellSelect, onSearchHighlightCh
                             <CardTitle className="text-base font-semibold tracking-tight">24-Hour Trends</CardTitle>
                           </div>
                           <div className="mt-2 inline-flex bg-gray-100 dark:bg-gray-800 rounded-full p-1 w-full overflow-x-auto no-scrollbar">
-                            {(['ph', 'tds', 'temperature', 'waterLevel'] as const).map((metric) => {
-                              const label = metric === 'ph' ? 'pH' : metric === 'tds' ? 'TDS' : metric === 'temperature' ? 'Temp' : 'Level';
+                            {(['ph', 'tds', 'temperature', 'waterLevel', 'turbidity'] as const).map((metric) => {
+                              const label = metric === 'ph' ? 'pH' : metric === 'tds' ? 'TDS' : metric === 'temperature' ? 'Temp' : metric === 'waterLevel' ? 'Level' : 'Turbidity';
                               const active = activeChart === metric;
                               return (
                                 <button
@@ -635,30 +635,38 @@ function RoutePlanner({ wells }: RoutePlannerProps) {
 interface ChatMessage { role: 'user' | 'assistant'; content: string }
 
 function AIChat() {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'assistant', content: 'Hi! I\'m your EcoWell AI assistant. Ask me about water quality, recent trends, or request a summary.' }
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [loadedHistory, setLoadedHistory] = useState(false);
 
-  // Load history from Supabase via API (GET /api/chat)
+  // Load history from Supabase via API (GET /api/chat), expanding rows with response into user+assistant pairs
   useEffect(() => {
     (async () => {
       try {
         const res = await fetch('/api/chat?limit=100');
         if (res.ok) {
           const json = await res.json();
-            if (Array.isArray(json.messages) && json.messages.length) {
-              // Map and fallback if roles unexpected
-              const hist: ChatMessage[] = json.messages.map((m: any) => ({
-                role: m.role === 'user' ? 'user' : 'assistant',
-                content: m.content || ''
-              }));
-              setMessages(hist);
+          if (Array.isArray(json.messages)) {
+            const hist: ChatMessage[] = [];
+            for (const m of json.messages) {
+              const role = m.role === 'assistant' ? 'assistant' : 'user';
+              const content = typeof m.content === 'string' ? m.content : '';
+              const response = typeof m.response === 'string' ? m.response : '';
+              if (role === 'assistant') {
+                if (content) hist.push({ role: 'assistant', content });
+              } else {
+                if (content) hist.push({ role: 'user', content });
+                if (response) hist.push({ role: 'assistant', content: response });
+              }
             }
+            if (hist.length === 0) {
+              hist.push({ role: 'assistant', content: 'Hi! I\'m your EcoWell AI assistant. Ask me about water quality, recent trends, or request a summary.' });
+            }
+            setMessages(hist);
+          }
         }
       } catch (e) {
         // ignore fetch errors (offline etc.)
@@ -680,76 +688,36 @@ function AIChat() {
     if (!input.trim() || streaming) return;
     const userMessage: ChatMessage = { role: 'user', content: input.trim() };
     const base = [...messages, userMessage];
-    // Optimistically add placeholder assistant message for streaming
-    setMessages([...base, { role: 'assistant', content: '' }]);
+    setMessages(base);
     setInput('');
     setStreaming(true);
 
-    const controller = new AbortController();
-    abortRef.current = controller;
-
     try {
-      const res = await fetch('/api/chat?stream=1', {
+      const res = await fetch('/api/chat', {
         method: 'POST',
-        signal: controller.signal,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: base.slice(-10), stream: true })
+        body: JSON.stringify({ messages: base.slice(-10) })
       });
-      const contentType = res.headers.get('content-type') || '';
       if (!res.ok) {
         const text = await res.text();
         throw new Error(text.slice(0, 300));
       }
-      if (contentType.includes('text/html')) {
-        const html = await res.text();
-        throw new Error('Server returned HTML (likely build config / dynamic route issue).');
-      }
-      if (!res.body) throw new Error('No stream body');
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let done = false;
-      let assistantText = '';
-      while (!done) {
-        const { value, done: doneReading } = await reader.read();
-        done = doneReading;
-        if (value) {
-          const chunk = decoder.decode(value, { stream: true });
-            assistantText += chunk;
-            setMessages(prev => {
-              const copy = [...prev];
-              // last message is assistant placeholder
-              copy[copy.length - 1] = { role: 'assistant', content: assistantText };
-              return copy;
-            });
-        }
-      }
+      const text = await res.text();
+      setMessages(prev => [...prev, { role: 'assistant', content: text }]);
     } catch (e: any) {
-      if (e.name === 'AbortError') {
-        setMessages(prev => {
-          const copy = [...prev];
-          copy[copy.length - 1] = { role: 'assistant', content: (copy.at(-1)?.content || '') + ' [stopped]' };
-          return copy;
-        });
-      } else {
-        setMessages(prev => [...prev, { role: 'assistant', content: 'Error: ' + (e.message || 'unknown') }]);
-      }
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Error: ' + (e.message || 'unknown') }]);
     } finally {
       setStreaming(false);
-      abortRef.current = null;
     }
   };
 
-  const stopStreaming = () => {
-    if (abortRef.current) {
-      abortRef.current.abort();
-    }
-  };
+  const stopStreaming = () => {};
 
   return (
   <Card className="bg-card/90 dark:bg-card/90 backdrop-blur-sm border border-gray-200/60 dark:border-gray-800/60 shadow-sm flex flex-col flex-1 min-h-0 h-full">
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-semibold tracking-tight">AI Chatbot</CardTitle>
-        <p className="text-xs text-gray-500 dark:text-gray-400">Gemini powered assistant. Streaming enabled.</p>
+  <p className="text-xs text-gray-500 dark:text-gray-400">OpenRouter powered assistant. Streaming disabled for testing.</p>
       </CardHeader>
   <CardContent className="flex-1 flex flex-col min-h-0 p-4">
         <div ref={scrollRef} className="flex-1 overflow-y-auto pr-1 space-y-3 aichat-scroll-visible min-h-0 pb-24">
@@ -763,16 +731,14 @@ function AIChat() {
                 {isAssistant ? (
                   <div className="prose prose-xs dark:prose-invert max-w-none prose-p:my-2 prose-pre:bg-gray-200 dark:prose-pre:bg-gray-800 prose-code:bg-gray-200 dark:prose-code:bg-gray-800 prose-code:text-gray-900 dark:prose-code:text-gray-100 prose-a:text-blue-600 dark:prose-a:text-blue-400">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {m.content || (streaming && i === messages.length - 1 ? '▌' : '')}
+                      {m.content}
                     </ReactMarkdown>
                   </div>
-                ) : (m.content || (streaming && i === messages.length - 1 ? '▌' : ''))}
+                ) : (m.content)}
               </div>
             );
           })}
-          {streaming && (
-            <div className="text-[11px] tracking-wide text-gray-500 dark:text-gray-400 animate-pulse">Streaming response...</div>
-          )}
+          {/* Non-streaming mode: no live indicator */}
         </div>
   <div className="flex items-center gap-2 pt-2 border-t border-transparent dark:border-transparent mt-0 bg-transparent dark:bg-transparent rounded-none">
           <Input
@@ -783,12 +749,7 @@ function AIChat() {
             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
             className="h-10 text-sm rounded-full bg-muted/40 dark:bg-muted/30 border border-border dark:border-gray-700 focus-visible:ring-0 disabled:opacity-60 flex-1 backdrop-blur-sm"
           />
-          {!streaming && (
-            <Button onClick={sendMessage} disabled={!input.trim()} className="rounded-full h-10 px-5 text-sm font-medium shadow-sm">Send</Button>
-          )}
-          {streaming && (
-            <Button variant="destructive" onClick={stopStreaming} className="rounded-full h-10 px-5 text-sm font-medium">Stop</Button>
-          )}
+          <Button onClick={sendMessage} disabled={!input.trim() || streaming} className="rounded-full h-10 px-5 text-sm font-medium shadow-sm">{streaming ? 'Sending…' : 'Send'}</Button>
         </div>
       </CardContent>
     </Card>

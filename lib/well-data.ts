@@ -13,6 +13,7 @@ export interface WellData {
     tds: number; // Total Dissolved Solids (ppm)
     temperature: number; // Celsius
     waterLevel: number; // meters
+    turbidity?: number; // Turbidity (NTU)
     lastUpdated: Date;
   };
   status: 'active' | 'warning' | 'critical' | 'offline';
@@ -22,6 +23,7 @@ export interface WellData {
     tds: number;
     temperature: number;
     waterLevel: number;
+    turbidity?: number;
   }>;
 }
 

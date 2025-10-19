@@ -1,13 +1,13 @@
 'use client';
 
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { WellData } from '@/lib/well-data';
 import { useEffect, useState } from 'react';
 import { useTheme } from 'next-themes';
 
 interface WellChartProps {
   well: WellData;
-  metric: 'ph' | 'tds' | 'temperature' | 'waterLevel';
+  metric: 'ph' | 'tds' | 'temperature' | 'waterLevel' | 'turbidity';
 }
 
 export function WellChart({ well, metric }: WellChartProps) {
@@ -39,10 +39,12 @@ export function WellChart({ well, metric }: WellChartProps) {
       } catch {}
       // Fallback to in-memory history
       if (!cancelled) {
-        let fallback = well.history.map(entry => ({
-          time: entry.timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-          value: entry[metric]
-        }));
+        let fallback = well.history
+          .filter((entry) => (entry as any)[metric] !== undefined && (entry as any)[metric] !== null)
+          .map(entry => ({
+            time: entry.timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+            value: Number((entry as any)[metric])
+          }));
         if (!fallback.length) {
           // Synthesize 24 points (hourly) around current value with slight jitter so chart isn't empty
           const base = (well.data as any)[metric] || 0;
@@ -74,6 +76,8 @@ export function WellChart({ well, metric }: WellChartProps) {
         return { label: 'Temperature', unit: '°C', color: '#f59e0b' };
       case 'waterLevel':
         return { label: 'Water Level', unit: 'm', color: '#06b6d4' };
+      case 'turbidity':
+        return { label: 'Turbidity', unit: 'NTU', color: '#10b981' };
       default:
         return { label: 'Unknown', unit: '', color: '#6b7280' };
     }
@@ -107,6 +111,13 @@ export function WellChart({ well, metric }: WellChartProps) {
             }}
             formatter={(value: number) => [`${value.toFixed(2)} ${metricInfo.unit}`, metricInfo.label]}
           />
+          {/* Turbidity guideline thresholds: Good <= 5 NTU, Warning <= 10 NTU, Critical > 10 NTU */}
+          {metric === 'turbidity' && (
+            <>
+              <ReferenceLine y={5} stroke="#f59e0b" strokeDasharray="4 4" label={{ value: '5 NTU', position: 'right', fontSize: 10, fill: theme === 'dark' ? '#e5e7eb' : '#374151' }} />
+              <ReferenceLine y={10} stroke="#ef4444" strokeDasharray="4 4" label={{ value: '10 NTU', position: 'right', fontSize: 10, fill: theme === 'dark' ? '#e5e7eb' : '#374151' }} />
+            </>
+          )}
       <Line
             type="monotone"
             dataKey="value"

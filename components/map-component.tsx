@@ -148,6 +148,9 @@ export function MapComponent({ wells, selectedWell, onWellSelect, highlightedWel
                 <div className="flex justify-between"><span className="text-muted-foreground">Temp</span><span className="font-medium text-foreground">{well.data.temperature.toFixed(1)}°C</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Water Level</span><span className="font-medium text-foreground">{well.data.waterLevel.toFixed(1)} m</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">pH Level</span><span className="font-medium text-foreground">{well.data.ph.toFixed(2)}</span></div>
+                {well.data.turbidity != null && (
+                  <div className="flex justify-between"><span className="text-muted-foreground">Turbidity</span><span className="font-medium text-foreground">{well.data.turbidity.toFixed(1)} NTU</span></div>
+                )}
               </div>
               <p className="text-[10px] text-muted-foreground mt-1">Updated {well.data.lastUpdated.toLocaleTimeString()}</p>
               <a
