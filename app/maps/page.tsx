@@ -48,6 +48,17 @@ export default function MapsPage() {
                 temperature: latestMetric.temperature != null ? Number(latestMetric.temperature) : (row.temperature != null ? Number(row.temperature) : 26.1), 
                 waterLevel: latestMetric.water_level != null ? Number(latestMetric.water_level) : (row.water_level != null ? Number(row.water_level) : 42),
                 turbidity: latestMetric.turbidity != null ? Number(latestMetric.turbidity) : undefined,
+                conductivity: latestMetric.conductivity != null ? Number(latestMetric.conductivity) : undefined,
+                dissolvedOxygen: latestMetric.dissolved_oxygen != null ? Number(latestMetric.dissolved_oxygen) : undefined,
+                hardness: latestMetric.hardness != null ? Number(latestMetric.hardness) : undefined,
+                chloride: latestMetric.chloride != null ? Number(latestMetric.chloride) : undefined,
+                fluoride: latestMetric.fluoride != null ? Number(latestMetric.fluoride) : undefined,
+                nitrate: latestMetric.nitrate != null ? Number(latestMetric.nitrate) : undefined,
+                sulfate: latestMetric.sulfate != null ? Number(latestMetric.sulfate) : undefined,
+                iron: latestMetric.iron != null ? Number(latestMetric.iron) : undefined,
+                manganese: latestMetric.manganese != null ? Number(latestMetric.manganese) : undefined,
+                arsenic: latestMetric.arsenic != null ? Number(latestMetric.arsenic) : undefined,
+                lead: latestMetric.lead != null ? Number(latestMetric.lead) : undefined,
                 lastUpdated: latestMetric.ts ? new Date(latestMetric.ts) : (row.last_ts ? new Date(row.last_ts) : new Date())
               },
               history: []

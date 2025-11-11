@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from 'next-themes';
+import { QRCodeSVG } from 'qrcode.react';
 
 export default function ProfilePage() {
   const { user, loading, refresh, role } = useUser();
@@ -26,6 +27,7 @@ export default function ProfilePage() {
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [showQRId, setShowQRId] = useState<string | null>(null);
   // Password reset state
   const [showReset, setShowReset] = useState(false);
   const [pwOld, setPwOld] = useState('');
@@ -276,31 +278,59 @@ export default function ProfilePage() {
             {(!wellsLoading && wells.length === 0) && <div className={`text-xs ${isDark ? 'text-white/50' : 'text-gray-500'}`}>No wells registered yet.</div>}
             <ul className="space-y-4">
               {wells.map(w => (
-                <li key={w.id} className={`group rounded-xl border px-4 py-3 flex items-center gap-4 ${isDark ? 'border-white/15 bg-white/5' : 'border-gray-200 bg-gray-50'} transition`}> 
-                  <div className="flex-1 min-w-0">
+                <li key={w.id} className={`group rounded-xl border px-4 py-3 ${isDark ? 'border-white/15 bg-white/5' : 'border-gray-200 bg-gray-50'} transition`}> 
+                  <div className="flex items-center gap-4">
+                    <div className="flex-1 min-w-0">
+                      {renamingId === w.id ? (
+                        <input value={renameValue} onChange={e=>setRenameValue(e.target.value)} className={`w-full rounded-lg px-2 py-1 text-sm outline-none border ${isDark ? 'bg-white/10 border-white/20 text-white' : 'bg-white border-gray-300 text-gray-800'} focus:ring-2 focus:ring-blue-400/40`} />
+                      ) : (
+                        <div className={`text-sm font-medium truncate ${isDark ? 'text-white' : 'text-gray-800'}`}>{w.name}</div>
+                      )}
+                      <div className={`mt-0.5 text-[11px] flex flex-wrap gap-2 ${isDark ? 'text-white/50' : 'text-gray-500'}`}>
+                        <span>ID: {w.id}</span>
+                        {w.panchayat_name && <span>Panchayat: {w.panchayat_name}</span>}
+                        <span>Lat: {Number(w.lat).toFixed(4)}</span>
+                        <span>Lng: {Number(w.lng).toFixed(4)}</span>
+                      </div>
+                    </div>
                     {renamingId === w.id ? (
-                      <input value={renameValue} onChange={e=>setRenameValue(e.target.value)} className={`w-full rounded-lg px-2 py-1 text-sm outline-none border ${isDark ? 'bg-white/10 border-white/20 text-white' : 'bg-white border-gray-300 text-gray-800'} focus:ring-2 focus:ring-blue-400/40`} />
+                      <div className="flex items-center gap-2">
+                        <button onClick={()=>submitRename(w.id)} className={`px-3 py-1 rounded-lg text-xs font-medium ${isDark ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'}`}>Save</button>
+                        <button onClick={cancelRename} className={`px-3 py-1 rounded-lg text-xs font-medium ${isDark ? 'bg-white/10 hover:bg-white/20 text-white/80' : 'bg-white border border-gray-300 text-gray-600 hover:bg-gray-50'}`}>Cancel</button>
+                      </div>
                     ) : (
-                      <div className={`text-sm font-medium truncate ${isDark ? 'text-white' : 'text-gray-800'}`}>{w.name}</div>
+                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition">
+                        <button onClick={()=>setShowQRId(showQRId === w.id ? null : w.id)} className={`px-3 py-1 rounded-lg text-xs font-medium ${isDark ? 'bg-emerald-600/80 hover:bg-emerald-600 text-white' : 'bg-emerald-600 hover:bg-emerald-500 text-white'}`}>
+                          {showQRId === w.id ? 'Hide QR' : 'Show QR'}
+                        </button>
+                        <button onClick={()=>startRename(w)} className={`px-3 py-1 rounded-lg text-xs font-medium ${isDark ? 'bg-white/10 hover:bg-white/20 text-white/80' : 'bg-white border border-gray-300 text-gray-600 hover:bg-gray-50'}`}>Rename</button>
+                        <button disabled={deletingId===w.id} onClick={()=>submitDelete(w.id)} className={`px-3 py-1 rounded-lg text-xs font-medium ${isDark ? 'bg-red-600/80 hover:bg-red-600 text-white' : 'bg-red-600 hover:bg-red-500 text-white'} disabled:opacity-50`}>{deletingId===w.id?'Deleting...':'Delete'}</button>
+                      </div>
                     )}
-                    <div className={`mt-0.5 text-[11px] flex flex-wrap gap-2 ${isDark ? 'text-white/50' : 'text-gray-500'}`}>
-                      <span>ID: {w.id}</span>
-                      {w.panchayat_name && <span>Panchayat: {w.panchayat_name}</span>}
-                      <span>Lat: {Number(w.lat).toFixed(4)}</span>
-                      <span>Lng: {Number(w.lng).toFixed(4)}</span>
-                    </div>
                   </div>
-                  {renamingId === w.id ? (
-                    <div className="flex items-center gap-2">
-                      <button onClick={()=>submitRename(w.id)} className={`px-3 py-1 rounded-lg text-xs font-medium ${isDark ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'}`}>Save</button>
-                      <button onClick={cancelRename} className={`px-3 py-1 rounded-lg text-xs font-medium ${isDark ? 'bg-white/10 hover:bg-white/20 text-white/80' : 'bg-white border border-gray-300 text-gray-600 hover:bg-gray-50'}`}>Cancel</button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition">
-                      <button onClick={()=>startRename(w)} className={`px-3 py-1 rounded-lg text-xs font-medium ${isDark ? 'bg-white/10 hover:bg-white/20 text-white/80' : 'bg-white border border-gray-300 text-gray-600 hover:bg-gray-50'}`}>Rename</button>
-                      <button disabled={deletingId===w.id} onClick={()=>submitDelete(w.id)} className={`px-3 py-1 rounded-lg text-xs font-medium ${isDark ? 'bg-red-600/80 hover:bg-red-600 text-white' : 'bg-red-600 hover:bg-red-500 text-white'} disabled:opacity-50`}>{deletingId===w.id?'Deleting...':'Delete'}</button>
-                    </div>
-                  )}
+                  <AnimatePresence>
+                    {showQRId === w.id && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                        animate={{ opacity: 1, height: 'auto', marginTop: 16 }}
+                        exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                        className={`flex flex-col items-center gap-3 p-4 rounded-lg border ${isDark ? 'bg-white/10 border-white/10' : 'bg-white border-gray-200'}`}
+                      >
+                        <div className={`p-3 rounded-lg ${isDark ? 'bg-white' : 'bg-white'}`}>
+                          <QRCodeSVG 
+                            value={JSON.stringify({ well_id: w.id, well_name: w.name })} 
+                            size={180}
+                            level="H"
+                            includeMargin={true}
+                          />
+                        </div>
+                        <div className={`text-xs text-center ${isDark ? 'text-white/70' : 'text-gray-600'}`}>
+                          <div className="font-medium mb-1">Scan this QR code with your ESP32 device</div>
+                          <div className={`text-[10px] ${isDark ? 'text-white/50' : 'text-gray-500'}`}>Contains: Well ID and Name</div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </li>
               ))}
             </ul>

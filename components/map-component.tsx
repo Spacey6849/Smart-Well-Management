@@ -130,7 +130,7 @@ export function MapComponent({ wells, selectedWell, onWellSelect, highlightedWel
           eventHandlers={{ click: () => onWellSelect(well) }}
         >
           <Popup className="well-popup">
-            <div className="p-3 min-w-[220px] space-y-2 font-sans rounded-lg">
+            <div className="p-3 min-w-[240px] max-w-[280px] space-y-2 font-sans rounded-lg">
               <div className="flex items-start justify-between gap-4">
                 <h3 className="font-semibold text-foreground leading-snug text-sm">{well.name}</h3>
                 <span className={`shrink-0 px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wide backdrop-blur-sm ${
@@ -140,19 +140,86 @@ export function MapComponent({ wells, selectedWell, onWellSelect, highlightedWel
                   'bg-muted/60 text-muted-foreground ring-1 ring-border/40'
                 }`}>{well.status.toUpperCase()}</span>
               </div>
-              <div className="space-y-1 text-[11px]">
-                <div className="flex justify-between"><span className="text-muted-foreground">Village</span><span className="font-medium text-foreground truncate max-w-[120px] text-right">{well.village || '—'}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Panchayat</span><span className="font-medium text-foreground truncate max-w-[120px] text-right">{well.panchayatName || '—'}</span></div>
+              
+              {/* Location Info */}
+              <div className="space-y-1 text-[11px] pb-2">
+                <div className="flex justify-between"><span className="text-muted-foreground">Village</span><span className="font-medium text-foreground truncate max-w-[140px] text-right">{well.village || '—'}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Panchayat</span><span className="font-medium text-foreground truncate max-w-[140px] text-right">{well.panchayatName || '—'}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Contact</span><span className="font-medium text-foreground text-right">{well.contactNumber || '—'}</span></div>
-                <div className="flex justify-between pt-1 border-t border-border/40"><span className="text-muted-foreground">TDS</span><span className="font-medium text-foreground">{Math.round(well.data.tds)} ppm</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Temp</span><span className="font-medium text-foreground">{well.data.temperature.toFixed(1)}°C</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Water Level</span><span className="font-medium text-foreground">{well.data.waterLevel.toFixed(1)} m</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">pH Level</span><span className="font-medium text-foreground">{well.data.ph.toFixed(2)}</span></div>
+              </div>
+
+              {/* Core Metrics */}
+              <div className="space-y-1 text-[11px] pt-2 border-t border-border/40">
+                <div className="font-semibold text-foreground/80 mb-1.5 text-[10px] uppercase tracking-wide">Water Quality</div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">pH Level</span>
+                  <span className={`font-medium ${
+                    well.data.ph >= 6.5 && well.data.ph <= 8.5 ? 'text-emerald-600 dark:text-emerald-400' :
+                    well.data.ph >= 6.0 && well.data.ph <= 9.0 ? 'text-amber-600 dark:text-amber-400' :
+                    'text-red-600 dark:text-red-400'
+                  }`}>{well.data.ph.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">TDS</span>
+                  <span className={`font-medium ${
+                    well.data.tds <= 500 ? 'text-emerald-600 dark:text-emerald-400' :
+                    well.data.tds <= 1000 ? 'text-amber-600 dark:text-amber-400' :
+                    'text-red-600 dark:text-red-400'
+                  }`}>{Math.round(well.data.tds)} ppm</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Temperature</span>
+                  <span className="font-medium text-foreground">{well.data.temperature.toFixed(1)}°C</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Water Level</span>
+                  <span className="font-medium text-foreground">{well.data.waterLevel.toFixed(1)} m</span>
+                </div>
                 {well.data.turbidity != null && (
-                  <div className="flex justify-between"><span className="text-muted-foreground">Turbidity</span><span className="font-medium text-foreground">{well.data.turbidity.toFixed(1)} NTU</span></div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Turbidity</span>
+                    <span className={`font-medium ${
+                      well.data.turbidity <= 5 ? 'text-emerald-600 dark:text-emerald-400' :
+                      well.data.turbidity <= 10 ? 'text-amber-600 dark:text-amber-400' :
+                      'text-red-600 dark:text-red-400'
+                    }`}>{well.data.turbidity.toFixed(1)} NTU</span>
+                  </div>
+                )}
+                {(well.data as any).conductivity != null && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Conductivity</span>
+                    <span className="font-medium text-foreground">{Math.round((well.data as any).conductivity)} µS/cm</span>
+                  </div>
+                )}
+                {(well.data as any).dissolvedOxygen != null && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Dissolved O₂</span>
+                    <span className="font-medium text-foreground">{((well.data as any).dissolvedOxygen).toFixed(1)} mg/L</span>
+                  </div>
+                )}
+                {(well.data as any).nitrate != null && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Nitrate</span>
+                    <span className={`font-medium ${
+                      (well.data as any).nitrate <= 10 ? 'text-emerald-600 dark:text-emerald-400' :
+                      (well.data as any).nitrate <= 50 ? 'text-amber-600 dark:text-amber-400' :
+                      'text-red-600 dark:text-red-400'
+                    }`}>{((well.data as any).nitrate).toFixed(1)} mg/L</span>
+                  </div>
+                )}
+                {(well.data as any).fluoride != null && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Fluoride</span>
+                    <span className={`font-medium ${
+                      (well.data as any).fluoride <= 1.5 ? 'text-emerald-600 dark:text-emerald-400' :
+                      (well.data as any).fluoride <= 2.5 ? 'text-amber-600 dark:text-amber-400' :
+                      'text-red-600 dark:text-red-400'
+                    }`}>{((well.data as any).fluoride).toFixed(2)} mg/L</span>
+                  </div>
                 )}
               </div>
-              <p className="text-[10px] text-muted-foreground mt-1">Updated {well.data.lastUpdated.toLocaleTimeString()}</p>
+              
+              <p className="text-[10px] text-muted-foreground mt-2 pt-2 border-t border-border/30">Updated {well.data.lastUpdated.toLocaleTimeString()}</p>
               <a
                 href={`https://www.google.com/maps/search/?api=1&query=${well.location.lat},${well.location.lng}`}
                 target="_blank"

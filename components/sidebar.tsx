@@ -460,6 +460,7 @@ function RoutePlanner({ wells }: RoutePlannerProps) {
   const [error, setError] = useState<string | null>(null);
   const [optLink, setOptLink] = useState<string | null>(null);
   const [excluded, setExcluded] = useState<Set<string>>(new Set());
+  const [locTried, setLocTried] = useState(false);
 
   const toggleExcluded = (id: string) => {
     setExcluded(prev => {
@@ -469,16 +470,37 @@ function RoutePlanner({ wells }: RoutePlannerProps) {
     });
   };
 
-  useEffect(() => {
+  const requestLocation = () => {
     if (!navigator.geolocation) {
-      setError('Geolocation not supported');
+      setError('Geolocation not supported on this device');
+      setLocTried(true);
       return;
     }
+    setError(null);
+    setLocTried(true);
+    // Prefer a relaxed setting first (often faster), allow cached position up to 60s
     navigator.geolocation.getCurrentPosition(
       (pos) => setPosition(pos),
-      (err) => setError(err.message),
-      { enableHighAccuracy: true, timeout: 8000 }
+      (err) => {
+        // Retry once with high accuracy and longer timeout if first attempt fails
+        navigator.geolocation.getCurrentPosition(
+          (pos2) => setPosition(pos2),
+          (err2) => {
+            // Friendly error, but we will still build a route without origin
+            setError(err2.code === 1
+              ? 'Location permission denied. We will still plan a route. Google Maps will use your current location.'
+              : 'Could not get your location in time. We will still plan a route. You can also retry.');
+          },
+          { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 }
+        );
+      },
+      { enableHighAccuracy: false, timeout: 12000, maximumAge: 60000 }
     );
+  };
+
+  useEffect(() => {
+    requestLocation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const haversine = (lat1: number, lon1: number, lat2: number, lon2: number) => {
@@ -501,10 +523,21 @@ function RoutePlanner({ wells }: RoutePlannerProps) {
 
   // Simple nearest-neighbor route (placeholder for full TSP) starting at user position
   const routeOrder = () => {
-  if (!position || activeWells.length === 0) return [] as { name: string; distanceFromPrev: number }[];
-  const remaining = [...activeWells];
-    let currentLat = position.coords.latitude;
-    let currentLng = position.coords.longitude;
+    if (activeWells.length === 0) return [] as { name: string; distanceFromPrev: number }[];
+    const remaining = [...activeWells];
+    // Start from device position if available, else use centroid of wells
+    let startLat: number;
+    let startLng: number;
+    if (position) {
+      startLat = position.coords.latitude;
+      startLng = position.coords.longitude;
+    } else {
+      const sum = remaining.reduce((acc, w) => ({ lat: acc.lat + w.location.lat, lng: acc.lng + w.location.lng }), { lat: 0, lng: 0 });
+      startLat = sum.lat / remaining.length;
+      startLng = sum.lng / remaining.length;
+    }
+    let currentLat = startLat;
+    let currentLng = startLng;
     const order: { name: string; distanceFromPrev: number }[] = [];
     while (remaining.length) {
       let bestIdx = 0;
@@ -514,7 +547,7 @@ function RoutePlanner({ wells }: RoutePlannerProps) {
         if (d < bestDist) { bestDist = d; bestIdx = i; }
       }
       const next = remaining.splice(bestIdx, 1)[0];
-      order.push({ name: next.name, distanceFromPrev: bestDist });
+      order.push({ name: next.name, distanceFromPrev: bestDist === Infinity ? 0 : bestDist });
       currentLat = next.location.lat; currentLng = next.location.lng;
     }
     return order;
@@ -524,29 +557,29 @@ function RoutePlanner({ wells }: RoutePlannerProps) {
   const totalDistance = order.reduce((sum, o) => sum + o.distanceFromPrev, 0);
 
   useEffect(() => {
-    if (!position || order.length === 0) { setOptLink(null); return; }
-    // Build Google Maps directions URL: origin -> waypoints -> destination (last)
-    // If only one well: origin user position to that well.
-    const origin = `${position.coords.latitude},${position.coords.longitude}`;
+    if (order.length === 0) { setOptLink(null); return; }
+    // Build Google Maps directions URL
+    // If position unavailable, omit origin to let Google Maps use device location
     const coordsList: string[] = [];
-    let prevLat = position.coords.latitude;
-    let prevLng = position.coords.longitude;
-    let totalKm = 0;
     order.forEach(o => {
       const w = wells.find(wl => wl.name === o.name);
-      if (w) {
-        coordsList.push(`${w.location.lat},${w.location.lng}`);
-        totalKm += o.distanceFromPrev;
-        prevLat = w.location.lat; prevLng = w.location.lng;
-      }
+      if (w) coordsList.push(`${w.location.lat},${w.location.lng}`);
     });
     if (!coordsList.length) { setOptLink(null); return; }
     const destination = coordsList[coordsList.length - 1];
     const waypoints = coordsList.slice(0, -1).join('|');
     const base = 'https://www.google.com/maps/dir/?api=1';
-    const url = waypoints
-      ? `${base}&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&waypoints=${encodeURIComponent(waypoints)}&travelmode=driving`
-      : `${base}&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&travelmode=driving`;
+    let url: string;
+    if (position) {
+      const origin = `${position.coords.latitude},${position.coords.longitude}`;
+      url = waypoints
+        ? `${base}&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&waypoints=${encodeURIComponent(waypoints)}&travelmode=driving`
+        : `${base}&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&travelmode=driving`;
+    } else {
+      url = waypoints
+        ? `${base}&destination=${encodeURIComponent(destination)}&waypoints=${encodeURIComponent(waypoints)}&travelmode=driving`
+        : `${base}&destination=${encodeURIComponent(destination)}&travelmode=driving`;
+    }
     setOptLink(url);
   }, [order, position, wells]);
 
@@ -562,7 +595,20 @@ function RoutePlanner({ wells }: RoutePlannerProps) {
         {!position && !error && (
           <div className="text-gray-500 dark:text-gray-400">Requesting location permission...</div>
         )}
-        {error && <div className="text-red-600 text-xs">{error}</div>}
+        {error && (
+          <div className="text-[11px] text-amber-600 dark:text-amber-400 space-y-1">
+            <p>{error}</p>
+            <div>
+              <button
+                type="button"
+                onClick={requestLocation}
+                className="mt-1 inline-flex items-center px-2.5 py-1 rounded-md border border-amber-400/40 text-amber-700 dark:text-amber-300 text-[11px] hover:bg-amber-500/10"
+              >
+                Retry location
+              </button>
+            </div>
+          </div>
+        )}
         {position && (
           <div className="text-xs text-gray-600 dark:text-gray-400">
             Your Position: {position.coords.latitude.toFixed(5)}, {position.coords.longitude.toFixed(5)}

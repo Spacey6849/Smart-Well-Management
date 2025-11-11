@@ -14,6 +14,17 @@ export interface WellData {
     temperature: number; // Celsius
     waterLevel: number; // meters
     turbidity?: number; // Turbidity (NTU)
+    conductivity?: number; // Electrical conductivity (µS/cm)
+    dissolvedOxygen?: number; // Dissolved oxygen (mg/L)
+    hardness?: number; // Water hardness (mg/L as CaCO3)
+    chloride?: number; // Chloride concentration (mg/L)
+    fluoride?: number; // Fluoride concentration (mg/L)
+    nitrate?: number; // Nitrate concentration (mg/L)
+    sulfate?: number; // Sulfate concentration (mg/L)
+    iron?: number; // Iron concentration (mg/L)
+    manganese?: number; // Manganese concentration (mg/L)
+    arsenic?: number; // Arsenic concentration (mg/L)
+    lead?: number; // Lead concentration (mg/L)
     lastUpdated: Date;
   };
   status: 'active' | 'warning' | 'critical' | 'offline';
