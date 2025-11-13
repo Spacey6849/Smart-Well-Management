@@ -59,6 +59,12 @@ export async function GET() {
     // Supabase returns joined table as array when using alias if multiple possible rows; we expect at most one
     const userRow = Array.isArray((w as any).users) ? (w as any).users[0] : (w as any).users;
     const latestMetric = metricsMap[w.id as string] || null;
+    // Inactivity rule: if no metrics in last 2 hours, mark as offline
+    const lastTs = latestMetric?.ts ? new Date(latestMetric.ts as string) : null;
+    const twoHoursMs = 2 * 60 * 60 * 1000;
+    const nowMs = Date.now();
+    const isOffline = !lastTs || (nowMs - lastTs.getTime() > twoHoursMs);
+    const effectiveStatus = isOffline ? 'offline' : (w.status || 'active');
     return {
       id: w.id,
       user_id: w.user_id,
@@ -67,7 +73,7 @@ export async function GET() {
       village_name: (w as any).village_name || userRow?.location || null,
       lat: w.lat,
       lng: w.lng,
-      status: w.status,
+      status: effectiveStatus,
       created_at: w.created_at,
       contact_phone: userRow?.phone || null,
       latest_metric: latestMetric
