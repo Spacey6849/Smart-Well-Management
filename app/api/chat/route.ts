@@ -388,10 +388,12 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   try {
     const url = new URL(req.url);
-    const limitParam = url.searchParams.get('limit');
+  const limitParam = url.searchParams.get('limit');
+  // Allow explicit username override when no app session is present (useful for simple deployments/tests)
+  const usernameParam = (url.searchParams.get('username') || '').trim() || null;
     const limit = Math.min(Math.max(parseInt(limitParam || '50', 10) || 50, 1), 200);
-    const cookieStore = cookies();
-    const token = cookieStore.get('ecw_admin_session')?.value || cookieStore.get('ecw_session')?.value || null;
+  const cookieStore = cookies();
+  const token = cookieStore.get('ecw_admin_session')?.value || cookieStore.get('ecw_session')?.value || null;
     const sb = supabaseServer();
     let userId: string | null = null;
     let adminId: string | null = null;
@@ -414,7 +416,8 @@ export async function GET(req: NextRequest) {
         }
       }
     }
-    if (!currentUsername) return new Response(JSON.stringify({ messages: [] }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  // If no app session was found, fall back to explicit ?username= parameter (or "Guest").
+  if (!currentUsername) currentUsername = usernameParam || 'Guest';
 
     const { data: rows } = await sb
       .from('chat_messages')
