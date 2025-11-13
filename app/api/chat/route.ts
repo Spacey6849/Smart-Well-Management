@@ -78,10 +78,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Build a concise well snapshot only if the user asks about wells/metrics
-    const needsWellContext = /well|metric|ph|tds|water|temperature|level|panchayat/i.test(lastUser || '') && wells.length;
+    // Build a concise well snapshot if the user asks about wells/metrics
+    const needsWellContext = /well|metric|ph|tds|water|temperature|level|panchayat/i.test(lastUser || '');
     let structuredBlock = '';
-    if (needsWellContext) {
+    if (needsWellContext && wells.length) {
       const wellSections: string[] = [];
       for (const w of wells) {
         const m = metricsByWell[w.id];
@@ -97,7 +97,8 @@ export async function POST(req: NextRequest) {
           `TDS: ${m.tds != null ? m.tds + ' ppm' : '—'}`,
           `Temp: ${m.temperature != null ? Number(m.temperature).toFixed(1) + '°C' : '—'}`,
           `Water Level: ${m.water_level != null ? Number(m.water_level).toFixed(2) + ' m' : '—'}`,
-          `pH Level: ${m.ph != null ? Number(m.ph).toFixed(2) : '—'}`
+          `pH Level: ${m.ph != null ? Number(m.ph).toFixed(2) : '—'}`,
+          `Turbidity: ${m.turbidity != null ? Number(m.turbidity).toFixed(2) + ' NTU' : '—'}`
         ].join('\n');
         wellSections.push(section);
       }
@@ -123,7 +124,7 @@ export async function POST(req: NextRequest) {
       if (likeTerm) {
         let q = sb
           .from('well_metrics')
-          .select('id,well_id,well_name,ph,tds,temperature,water_level,ts')
+          .select('id,well_id,well_name,ph,tds,temperature,water_level,turbidity,ts')
           .order('ts', { ascending: false })
           .limit(5);
         // Apply ilike for each token to allow non-contiguous matches (AND logic)
@@ -133,7 +134,7 @@ export async function POST(req: NextRequest) {
         const { data: mRows } = await (q as any);
         if (mRows && mRows.length) {
           const m = mRows[0];
-          const section = [
+            const section = [
             `Well Name: ${m.well_name || 'Unknown Well'}`,
             `Village name: —`,
             `Panchayat Name: —`,
@@ -141,13 +142,47 @@ export async function POST(req: NextRequest) {
             `TDS: ${m.tds != null ? m.tds + ' ppm' : '—'}`,
             `Temp: ${m.temperature != null ? Number(m.temperature).toFixed(1) + '°C' : '—'}`,
             `Water Level: ${m.water_level != null ? Number(m.water_level).toFixed(2) + ' m' : '—'}`,
-            `pH Level: ${m.ph != null ? Number(m.ph).toFixed(2) : '—'}`
+              `pH Level: ${m.ph != null ? Number(m.ph).toFixed(2) : '—'}`,
+              `Turbidity: ${m.turbidity != null ? Number(m.turbidity).toFixed(2) + ' NTU' : '—'}`
           ].join('\n');
           structuredBlock = section;
         }
       }
     }
 
+
+    // Absolute fallback: if no user wells and no specific mention produced a section,
+    // include a compact snapshot of the latest readings directly from well_metrics.
+    if (!structuredBlock && !wells.length) {
+      const { data: latest } = await sb
+        .from('well_metrics')
+        .select('well_id,well_name,ph,tds,temperature,water_level,turbidity,ts')
+        .order('ts', { ascending: false })
+        .limit(20);
+      if (latest && latest.length) {
+        const seen = new Set<string>();
+        const chosen: any[] = [];
+        for (const r of latest) {
+          const key = (r.well_id as string) || (r.well_name as string) || String(r.ts);
+          if (seen.has(key)) continue;
+          seen.add(key);
+          chosen.push(r);
+          if (chosen.length >= 5) break;
+        }
+        const sections = chosen.map((m:any) => [
+          `Well Name: ${m.well_name || 'Unknown Well'}`,
+          `Village name: —`,
+          `Panchayat Name: —`,
+          `Contact Number: —`,
+          `TDS: ${m.tds != null ? m.tds + ' ppm' : '—'}`,
+          `Temp: ${m.temperature != null ? Number(m.temperature).toFixed(1) + '°C' : '—'}`,
+          `Water Level: ${m.water_level != null ? Number(m.water_level).toFixed(2) + ' m' : '—'}`,
+          `pH Level: ${m.ph != null ? Number(m.ph).toFixed(2) : '—'}`,
+          `Turbidity: ${m.turbidity != null ? Number(m.turbidity).toFixed(2) + ' NTU' : '—'}`
+        ].join('\n'));
+        structuredBlock = sections.join('\n\n');
+      }
+    }
     // Resolve a human-readable username (for new schema). If both admin & user present, admin wins.
     let currentUsername: string | null = null;
     if (adminId) {
@@ -191,9 +226,8 @@ export async function POST(req: NextRequest) {
       const orMessages: Array<{ role: 'system'|'user'|'assistant'; content: string }> = [];
       orMessages.push({ role: 'system', content: systemPreamble });
       orMessages.push({ role: 'system', content: securityGuard });
-      if (needsWellContext && structuredBlock) {
-        orMessages.push({ role: 'system', content: 'Structured Well Snapshot (Latest):\n' + structuredBlock });
-      }
+      const includeContext = !!structuredBlock && (needsWellContext || !wells.length);
+      if (includeContext) orMessages.push({ role: 'system', content: 'Structured Well Snapshot (Latest):\n' + structuredBlock });
       for (const m of messages.slice(-25)) {
         const role = m.role === 'assistant' ? 'assistant' : 'user';
         orMessages.push({ role, content: m.content });
