@@ -12,9 +12,11 @@ interface MetricCardProps {
   icon: React.ReactNode;
   onClick?: () => void;
   isActive?: boolean;
+  // Optional LED3 indicator dot color for specific metrics (e.g., water level distance)
+  ledColor?: 'green' | 'orange' | 'red';
 }
 
-export function MetricCard({ label, value, unit, status, icon, onClick, isActive }: MetricCardProps) {
+export function MetricCard({ label, value, unit, status, icon, onClick, isActive, ledColor }: MetricCardProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'good':
@@ -130,7 +132,7 @@ export function MetricCard({ label, value, unit, status, icon, onClick, isActive
                 </div>
               </div>
             </div>
-            <div className="pl-10 -mt-1">
+            <div className="pl-10 -mt-1 flex items-center gap-2">
               <p className={`text-xl sm:text-[22px] font-bold leading-none tracking-tight ${getTextColor(status)} select-none`}>                
                 <motion.span
                   key={displayValue}
@@ -146,6 +148,13 @@ export function MetricCard({ label, value, unit, status, icon, onClick, isActive
                   </span>
                 )}
               </p>
+              {ledColor && (
+                <span
+                  aria-label={`LED ${ledColor}`}
+                  title={`LED ${ledColor}`}
+                  className={`inline-block w-3 h-3 rounded-full shadow-sm ${ledColor === 'green' ? 'bg-emerald-500' : ledColor === 'orange' ? 'bg-amber-500' : 'bg-red-500'}`}
+                />
+              )}
             </div>
           </div>
         </CardContent>

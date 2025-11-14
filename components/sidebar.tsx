@@ -28,6 +28,7 @@ import { MetricCard } from './metric-card';
 import { WellChart } from './well-chart';
 import { PredictiveChart } from './predictive-chart';
 import { ThemeToggle } from './theme-toggle';
+import { getLed3Color } from '@/lib/utils';
 
 interface SidebarProps {
   wells: WellData[];
@@ -257,6 +258,13 @@ export function Sidebar({ wells, selectedWell, onWellSelect, onSearchHighlightCh
                               icon={<Activity className="h-4 w-4" />}
                               onClick={() => setActiveChart('waterLevel')}
                               isActive={activeChart === 'waterLevel'}
+                              ledColor={(() => {
+                                // Convert meters to centimeters for LED3 rule.
+                                const distanceCm = Number.isFinite(selectedWell.data.waterLevel)
+                                  ? Math.max(0, selectedWell.data.waterLevel * 100)
+                                  : null;
+                                return getLed3Color(distanceCm) || undefined;
+                              })()}
                             />
                           </div>
                         </CardContent>

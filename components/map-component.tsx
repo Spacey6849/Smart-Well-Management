@@ -7,6 +7,7 @@ import type { Map as LeafletMap } from 'leaflet';
 import type { Marker as LeafletMarker } from 'leaflet';
 import { ExternalLink } from 'lucide-react';
 import { WellData } from '@/lib/well-data';
+import { getLed3Color, led3ColorToBg } from '@/lib/utils';
 import { useTheme } from 'next-themes';
 import 'leaflet/dist/leaflet.css';
 
@@ -173,7 +174,20 @@ export function MapComponent({ wells, selectedWell, onWellSelect, highlightedWel
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Water Level</span>
-                  <span className="font-medium text-foreground">{well.data.waterLevel.toFixed(1)} m</span>
+                  <span className="font-medium text-foreground flex items-center gap-1.5">
+                    {well.data.waterLevel.toFixed(1)} m
+                    {(() => {
+                      const distanceCm = Number.isFinite(well.data.waterLevel) ? Math.max(0, well.data.waterLevel * 100) : null;
+                      const led = getLed3Color(distanceCm);
+                      return (
+                        <span
+                          aria-label={`LED ${led ?? 'n/a'}`}
+                          title={`LED ${led ?? 'n/a'}`}
+                          className={`inline-block w-2.5 h-2.5 rounded-full ${led3ColorToBg(led)} ml-1`}
+                        />
+                      );
+                    })()}
+                  </span>
                 </div>
                 {well.data.turbidity != null && (
                   <div className="flex justify-between">
