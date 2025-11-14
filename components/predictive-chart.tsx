@@ -68,7 +68,7 @@ export function PredictiveChart({ well, futureHours = 12 }: PredictiveChartProps
         <LineChart data={data} margin={{ left: 8, right: 4, top: 8, bottom: 4 }}>
           <XAxis dataKey="time" tick={{ fontSize: 10 }} interval={Math.max(0, Math.floor(Math.max(data.length, 1)/8))} />
           <YAxis tick={{ fontSize: 10 }} domain={[ (dataMin: number) => dataMin - 2, (dataMax: number) => dataMax + 2 ]} />
-          <Tooltip contentStyle={{ fontSize: '12px' }} formatter={(v: any, n: any, p: any)=>[v + ' m', p.payload.projected ? 'Projected' : 'Water Level']} />
+          <Tooltip contentStyle={{ fontSize: '12px' }} formatter={(v: any, n: any, p: any)=>[v + ' cm', p.payload.projected ? 'Projected' : 'Water Level']} />
           <Line type="monotone" dataKey="waterLevel" stroke="#3b82f6" strokeWidth={2} dot={false} isAnimationActive={false} />
           {/* Overlay projected segment using dashed style by drawing second line over projected points */}
           <Line type="monotone" data={data.filter(d=>d.projected)} dataKey="waterLevel" stroke="#6366f1" strokeWidth={2} strokeDasharray="4 4" dot={false} isAnimationActive={false} />

@@ -175,7 +175,7 @@ export function MapComponent({ wells, selectedWell, onWellSelect, highlightedWel
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Water Level</span>
                   {(() => {
-                    const distanceCm = Number.isFinite(well.data.waterLevel) ? Math.max(0, well.data.waterLevel * 100) : null;
+                    const distanceCm = Number.isFinite(well.data.waterLevel) ? Math.max(0, well.data.waterLevel) : null;
                     const led = getLed3Color(distanceCm);
                     const colorClass = led === 'green'
                       ? 'text-emerald-600 dark:text-emerald-400'

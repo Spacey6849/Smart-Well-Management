@@ -119,7 +119,7 @@ export async function POST(req: NextRequest) {
           `Contact Number: ${phone}`,
           `TDS: ${m.tds != null ? m.tds + ' ppm' : '—'}`,
           `Temperature: ${m.temperature != null ? Number(m.temperature).toFixed(1) + '°C' : '—'}`,
-          `Water Level: ${m.water_level != null ? Number(m.water_level).toFixed(2) + ' m' : '—'}`,
+          `Water Level: ${m.water_level != null ? Math.round(Number(m.water_level)) + ' cm' : '—'}`,
           `pH Level: ${m.ph != null ? Number(m.ph).toFixed(2) : '—'}`,
           `Turbidity: ${m.turbidity != null ? Number(m.turbidity).toFixed(2) + ' NTU' : '—'}`
         ].join('\n');
@@ -181,7 +181,7 @@ export async function POST(req: NextRequest) {
             `Contact Number: —`,
             `TDS: ${m.tds != null ? m.tds + ' ppm' : '—'}`,
             `Temperature: ${m.temperature != null ? Number(m.temperature).toFixed(1) + '°C' : '—'}`,
-            `Water Level: ${m.water_level != null ? Number(m.water_level).toFixed(2) + ' m' : '—'}`,
+            `Water Level: ${m.water_level != null ? Math.round(Number(m.water_level)) + ' cm' : '—'}`,
             `pH Level: ${m.ph != null ? Number(m.ph).toFixed(2) : '—'}`,
               `Turbidity: ${m.turbidity != null ? Number(m.turbidity).toFixed(2) + ' NTU' : '—'}`
           ].join('\n');
@@ -224,7 +224,7 @@ export async function POST(req: NextRequest) {
           `pH Level : ${latestRow.ph != null ? Number(latestRow.ph).toFixed(2) : '—'}`,
           `TDS : ${latestRow.tds != null ? latestRow.tds + ' ppm' : '—'}`,
           `Temperature : ${latestRow.temperature != null ? Number(latestRow.temperature).toFixed(1) + '°C' : '—'}`,
-          `Water Level : ${latestRow.water_level != null ? Number(latestRow.water_level).toFixed(2) + ' m' : '—'}`,
+          `Water Level : ${latestRow.water_level != null ? Math.round(Number(latestRow.water_level)) + ' cm' : '—'}`,
           `Turbidity : ${latestRow.turbidity != null ? Number(latestRow.turbidity).toFixed(2) + ' NTU' : '—'}`
         ];
         const formatted = lines.join('\n');
@@ -270,7 +270,7 @@ export async function POST(req: NextRequest) {
           `pH Level : ${latestRow.ph != null ? Number(latestRow.ph).toFixed(2) : '—'}`,
           `TDS : ${latestRow.tds != null ? latestRow.tds + ' ppm' : '—'}`,
           `Temperature : ${latestRow.temperature != null ? Number(latestRow.temperature).toFixed(1) + '°C' : '—'}`,
-          `Water Level : ${latestRow.water_level != null ? Number(latestRow.water_level).toFixed(2) + ' m' : '—'}`,
+          `Water Level : ${latestRow.water_level != null ? Math.round(Number(latestRow.water_level)) + ' cm' : '—'}`,
           `Turbidity : ${latestRow.turbidity != null ? Number(latestRow.turbidity).toFixed(2) + ' NTU' : '—'}`
         ];
         const formatted = lines.join('\n');
@@ -304,7 +304,7 @@ export async function POST(req: NextRequest) {
           `Contact Number: —`,
           `TDS: ${m.tds != null ? m.tds + ' ppm' : '—'}`,
           `Temperature: ${m.temperature != null ? Number(m.temperature).toFixed(1) + '°C' : '—'}`,
-          `Water Level: ${m.water_level != null ? Number(m.water_level).toFixed(2) + ' m' : '—'}`,
+          `Water Level: ${m.water_level != null ? Math.round(Number(m.water_level)) + ' cm' : '—'}`,
           `pH Level: ${m.ph != null ? Number(m.ph).toFixed(2) : '—'}`,
           `Turbidity: ${m.turbidity != null ? Number(m.turbidity).toFixed(2) + ' NTU' : '—'}`
         ].join('\n'));
@@ -405,7 +405,7 @@ export async function POST(req: NextRequest) {
             const m = c.metrics;
             lines.push(`   TDS: ${m.tds != null ? m.tds + ' ppm' : '—'}`);
             lines.push(`   Temp: ${m.temperature != null ? Number(m.temperature).toFixed(1) + '°C' : '—'}`);
-            lines.push(`   Water Level: ${m.water_level != null ? Number(m.water_level).toFixed(2) + ' m' : '—'}`);
+            lines.push(`   Water Level: ${m.water_level != null ? Math.round(Number(m.water_level)) + ' cm' : '—'}`);
             lines.push(`   pH Level: ${m.ph != null ? Number(m.ph).toFixed(2) : '—'}`);
           });
           lines.push('Thresholds used: TDS >1000 ppm, pH <6.5 or >8.5, Water Level <2 m.');

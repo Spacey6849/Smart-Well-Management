@@ -79,9 +79,9 @@ export function Sidebar({ wells, selectedWell, onWellSelect, onSearchHighlightCh
         if (value >= 10 && value <= 30) return 'warning';
         return 'critical';
       case 'waterLevel': {
-        // Use LED3 distance thresholds (convert meters -> centimeters):
+        // Use LED3 distance thresholds with centimeters directly from DB:
         //  <=16 cm => good, 17-19.99 cm => warning, >=20 cm => critical
-        const distanceCm = Number.isFinite(value) ? Math.max(0, value * 100) : Number.NaN;
+        const distanceCm = Number.isFinite(value) ? Math.max(0, value) : Number.NaN;
         if (!Number.isNaN(distanceCm)) {
           if (distanceCm <= 16) return 'good';
           if (distanceCm < 20) return 'warning';
@@ -259,16 +259,16 @@ export function Sidebar({ wells, selectedWell, onWellSelect, onSearchHighlightCh
                             />
                             <MetricCard
                               label="Water Level"
-                              value={Math.round(selectedWell.data.waterLevel * 100).toString()}
+                              value={Math.round(selectedWell.data.waterLevel).toString()}
                               unit="cm"
                               status={getMetricStatus(selectedWell.data.waterLevel, 'waterLevel')}
                               icon={<Activity className="h-4 w-4" />}
                               onClick={() => setActiveChart('waterLevel')}
                               isActive={activeChart === 'waterLevel'}
                               ledColor={(() => {
-                                // Convert meters to centimeters for LED3 rule.
+                                // DB already provides centimeters
                                 const distanceCm = Number.isFinite(selectedWell.data.waterLevel)
-                                  ? Math.max(0, selectedWell.data.waterLevel * 100)
+                                  ? Math.max(0, selectedWell.data.waterLevel)
                                   : null;
                                 return getLed3Color(distanceCm) || undefined;
                               })()}
@@ -399,7 +399,7 @@ export function Sidebar({ wells, selectedWell, onWellSelect, onSearchHighlightCh
                           </div>
                           <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/40">
                             <p className="text-[11px] uppercase font-medium tracking-wide text-gray-500 dark:text-gray-400">Avg Level</p>
-                            <p className="text-lg font-semibold text-gray-800 dark:text-gray-100">{(wells.reduce((s,w)=>s+w.data.waterLevel,0)/wells.length).toFixed(1)}<span className='text-xs font-normal ml-0.5'>m</span></p>
+                            <p className="text-lg font-semibold text-gray-800 dark:text-gray-100">{Math.round(wells.reduce((s,w)=>s+w.data.waterLevel,0)/Math.max(1,wells.length))}<span className='text-xs font-normal ml-0.5'>cm</span></p>
                           </div>
                         </div>
                       )}

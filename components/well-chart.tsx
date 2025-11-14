@@ -75,7 +75,7 @@ export function WellChart({ well, metric }: WellChartProps) {
       case 'temperature':
         return { label: 'Temperature', unit: '°C', color: '#f59e0b' };
       case 'waterLevel':
-        return { label: 'Water Level', unit: 'm', color: '#06b6d4' };
+        return { label: 'Water Level', unit: 'cm', color: '#06b6d4' };
       case 'turbidity':
         return { label: 'Turbidity', unit: 'NTU', color: '#10b981' };
       default:
