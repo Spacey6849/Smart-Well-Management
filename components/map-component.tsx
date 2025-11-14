@@ -174,20 +174,25 @@ export function MapComponent({ wells, selectedWell, onWellSelect, highlightedWel
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Water Level</span>
-                  <span className="font-medium text-foreground flex items-center gap-1.5">
-                    {well.data.waterLevel.toFixed(1)} m
-                    {(() => {
-                      const distanceCm = Number.isFinite(well.data.waterLevel) ? Math.max(0, well.data.waterLevel * 100) : null;
-                      const led = getLed3Color(distanceCm);
-                      return (
+                  {(() => {
+                    const distanceCm = Number.isFinite(well.data.waterLevel) ? Math.max(0, well.data.waterLevel * 100) : null;
+                    const led = getLed3Color(distanceCm);
+                    const colorClass = led === 'green'
+                      ? 'text-emerald-600 dark:text-emerald-400'
+                      : led === 'orange'
+                        ? 'text-amber-600 dark:text-amber-400'
+                        : 'text-red-600 dark:text-red-400';
+                    return (
+                      <span className={`font-medium flex items-center gap-1.5 ${colorClass}`}>
+                        {distanceCm != null ? Math.round(distanceCm) : '—'} cm
                         <span
                           aria-label={`LED ${led ?? 'n/a'}`}
                           title={`LED ${led ?? 'n/a'}`}
                           className={`inline-block w-2.5 h-2.5 rounded-full ${led3ColorToBg(led)} ml-1`}
                         />
-                      );
-                    })()}
-                  </span>
+                      </span>
+                    );
+                  })()}
                 </div>
                 {well.data.turbidity != null && (
                   <div className="flex justify-between">

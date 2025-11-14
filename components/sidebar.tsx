@@ -78,10 +78,17 @@ export function Sidebar({ wells, selectedWell, onWellSelect, onSearchHighlightCh
         if (value >= 15 && value <= 25) return 'good';
         if (value >= 10 && value <= 30) return 'warning';
         return 'critical';
-      case 'waterLevel':
-        if (value >= 40) return 'good';
-        if (value >= 30) return 'warning';
+      case 'waterLevel': {
+        // Use LED3 distance thresholds (convert meters -> centimeters):
+        //  <=16 cm => good, 17-19.99 cm => warning, >=20 cm => critical
+        const distanceCm = Number.isFinite(value) ? Math.max(0, value * 100) : Number.NaN;
+        if (!Number.isNaN(distanceCm)) {
+          if (distanceCm <= 16) return 'good';
+          if (distanceCm < 20) return 'warning';
+          return 'critical';
+        }
         return 'critical';
+      }
       default:
         return 'good';
     }
@@ -252,8 +259,8 @@ export function Sidebar({ wells, selectedWell, onWellSelect, onSearchHighlightCh
                             />
                             <MetricCard
                               label="Water Level"
-                              value={selectedWell.data.waterLevel.toFixed(1)}
-                              unit="m"
+                              value={Math.round(selectedWell.data.waterLevel * 100).toString()}
+                              unit="cm"
                               status={getMetricStatus(selectedWell.data.waterLevel, 'waterLevel')}
                               icon={<Activity className="h-4 w-4" />}
                               onClick={() => setActiveChart('waterLevel')}
